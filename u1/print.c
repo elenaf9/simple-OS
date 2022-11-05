@@ -1,6 +1,8 @@
+#include <stdarg.h>
+
 #define DBGU 0xfffff200 // Debug Unit
 
-#define DBGU_CR 0x00 // Debug unit control register
+#define DBGU_CR 0x0000 // Debug unit control register
 #define RSTRX (1 << 2) // Reset RX
 #define RSTTX (1 << 3) // Reset TX
 #define RXEN (1 << 4) // Enable RX
@@ -28,37 +30,29 @@ static inline unsigned int read_u32 (unsigned int addr) {
 	return *(volatile unsigned int *)addr;
 }
 
-static inline void set_bit (unsigned int addr, unsigned int val) {
-	*(volatile unsigned int *)addr |= val;
-}
-
-static inline void remove_bit (unsigned int addr, unsigned int val) {
-	*(volatile unsigned int *)addr &= ~val;
-}
-
 static inline unsigned int is_set (unsigned int addr, unsigned int bit) {
-    if ((*(volatile unsigned int *)addr & bit) == bit) {
-      return 1;
-    } else {
-      return 0;
-    }
+  if ((*(volatile unsigned int *)addr & bit) == bit) {
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 // Enable receiver and transmitter
 void init_dbgu (void) {
-  set_bit (DBGU + DBGU_CR, RXEN);
-  set_bit (DBGU + DBGU_CR, TXEN);
+  write_u32 (DBGU + DBGU_CR, RXEN);
+  write_u32 (DBGU + DBGU_CR, TXEN);
 }
  
 // Reset receiver, transmitter, and status bits
 void reset (void) {
-  set_bit (DBGU + DBGU_CR, RSTRX);
-  set_bit (DBGU + DBGU_CR, RSTTX);
-  set_bit (DBGU + DBGU_CR, RSTSTA);
+  write_u32 (DBGU + DBGU_CR, RSTRX);
+  write_u32 (DBGU + DBGU_CR, RSTTX);
+  write_u32 (DBGU + DBGU_CR, RSTSTA);
 }
 
 // Write a single char to the transmitter.
-void write_char(unsigned char val) {
+void write_char(char val) {
   // Wait transmitter to be ready
   while (!is_set (DBGU + DBGU_SR, TXRDY)) {
   }
@@ -70,23 +64,65 @@ void write_char(unsigned char val) {
 }
 
 // Read a single char from the receiver.
-unsigned char read_char(void) {
+char read_char(void) {
   // Wait until we received something
   while (!is_set (DBGU + DBGU_SR, RXRDY)) {
   }
+  
   // Read value
-  unsigned char val = read_u32 (DBGU + DBGU_RHR);
+  char val = read_u32 (DBGU + DBGU_RHR);
   return val;
+}
 
-  // // Check for errors
-  // if (is_set (DBGU + DBGU_SR, OVRE)) {
-  //   return OVRE;
-  // }
-  // if (is_set (DBGU + DBGU_SR, FRAME)) {
-  //   return FRAME;
-  // }
-  // if (is_set (DBGU + DBGU_SR, PARE)) {
-  //   return PARE;
-  // }
-  // return 0;
+// Print integer as hexadecimal
+void print_as_hex(unsigned int val) {
+
+}
+
+__attribute__((format(printf, 1, 2)))
+int printf(char *fmt, ...) {
+  // Variable input list
+  va_list ap;
+
+  int ret = 0;
+
+  // Store previous character to identify '%'
+  char prev = ' ';
+
+  char c;
+  char *s;
+  int x;
+
+  va_start(ap, fmt);
+  while (*fmt) {
+    char curr = *fmt++;
+    if (prev == '%') {
+      switch (curr) {
+        case 'c':
+          c = (char) va_arg(ap, int);
+          write_char(c);
+          break;
+        case 's':
+          s = va_arg(ap, char *);
+          while(*s) {
+            write_char(*s++);
+          }
+          break;
+        case 'p':
+        case 'x':
+          x = va_arg(ap, int);
+          print_as_hex(x);
+          break;
+        default:
+          ret = 1;
+          goto finish;
+      }
+    } else if (!(curr == '%')) {
+      write_char(curr);
+    }
+    prev = curr;
+  }
+finish:
+  va_end(ap);
+  return ret;
 }
