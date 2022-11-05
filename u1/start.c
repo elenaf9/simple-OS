@@ -6,7 +6,7 @@ __attribute__((naked, section(".init"))) void _start(void) {
 
   while (1) {
     char val = read_char();
-    printf("[%x] %s: %c\n", i, "Received", val);
+    printf("[%x] %s: %c %p\n", i, "Received", val, &val);
     i++;
   }
   reset();

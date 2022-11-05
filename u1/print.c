@@ -120,6 +120,7 @@ __attribute__((format(printf, 1, 2))) int printf(char *fmt, ...) {
   char c;
   char *s;
   int x;
+  int *p;
 
   va_start(ap, fmt);
   while (*fmt) {
@@ -137,6 +138,9 @@ __attribute__((format(printf, 1, 2))) int printf(char *fmt, ...) {
         }
         break;
       case 'p':
+        p = va_arg(ap, void *);
+        print_as_hex((int)p);
+        break;
       case 'x':
         x = va_arg(ap, int);
         print_as_hex(x);
