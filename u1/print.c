@@ -41,15 +41,12 @@ static inline unsigned int is_set(unsigned int addr, unsigned int bit) {
 
 // Enable receiver and transmitter
 void init_dbgu(void) {
-  write_u32(DBGU + DBGU_CR, RXEN);
-  write_u32(DBGU + DBGU_CR, TXEN);
+  write_u32(DBGU + DBGU_CR, RXEN | TXEN);
 }
 
 // Reset receiver, transmitter, and status bits
 void reset(void) {
-  write_u32(DBGU + DBGU_CR, RSTRX);
-  write_u32(DBGU + DBGU_CR, RSTTX);
-  write_u32(DBGU + DBGU_CR, RSTSTA);
+  write_u32(DBGU + DBGU_CR, RSTRX | RSTTX | RSTSTA);
 }
 
 // Write a single char to the transmitter.
