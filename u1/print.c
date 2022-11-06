@@ -39,12 +39,12 @@ static inline unsigned int is_set(unsigned int addr, unsigned int bit) {
   }
 }
 
-// Enable receiver and transmitter
+// Enable the debug unit receiver and transmitter.
 void init_dbgu(void) {
   write_u32(DBGU + DBGU_CR, RXEN | TXEN);
 }
 
-// Reset receiver, transmitter, and status bits
+// Reset the debug unit receiver, transmitter, and status bits.
 void reset(void) {
   write_u32(DBGU + DBGU_CR, RSTRX | RSTTX | RSTSTA);
 }
@@ -105,13 +105,14 @@ void print_as_hex(unsigned int val) {
   return;
 }
 
+// Print a formatted string.
 __attribute__((format(printf, 1, 2))) int printf(char *fmt, ...) {
   // Variable input list
   va_list ap;
 
   int ret = 0;
 
-  // Store previous character to identify '%'
+  // Store previous character to identify a '%'.
   char prev = ' ';
 
   char c;
@@ -120,6 +121,7 @@ __attribute__((format(printf, 1, 2))) int printf(char *fmt, ...) {
   int *p;
 
   va_start(ap, fmt);
+  
   while (*fmt) {
     char curr = *fmt++;
     if (prev == '%') {
