@@ -77,7 +77,7 @@ void print_as_hex(unsigned int val) {
 
   char hex[50];
 
-  int i = 0;
+  unsigned int i = 0;
 
   write_char('0');
   write_char('x');
@@ -118,7 +118,7 @@ __attribute__((format(printf, 1, 2))) int printf(char *fmt, ...) {
   char c;
   char *s;
   int x;
-  int *p;
+  size_t *p;
 
   va_start(ap, fmt);
   
@@ -138,7 +138,7 @@ __attribute__((format(printf, 1, 2))) int printf(char *fmt, ...) {
         break;
       case 'p':
         p = va_arg(ap, void *);
-        print_as_hex((int)p);
+        print_as_hex((size_t)p);
         break;
       case 'x':
         x = va_arg(ap, int);
