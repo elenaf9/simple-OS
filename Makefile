@@ -16,7 +16,7 @@
 # Quellen
 #
 LSCRIPT = kernel.lds
-OBJ = start.o print.o
+OBJ = system/start.o system/main.o lib/print.o
 
 #
 # Konfiguration
@@ -26,6 +26,7 @@ LD = arm-none-eabi-ld
 OBJCOPY = arm-none-eabi-objcopy
 
 CFLAGS = -Wall -Wextra -ffreestanding -mcpu=arm920t -O2
+CPPFLAGS = -Iinclude
 #LIBGCC := $(shell $(CC) -print-libgcc-file-name)
 
 DEP = $(OBJ:.o=.d)
@@ -39,10 +40,10 @@ all: kernel
 -include $(DEP)
 
 %.o: %.S
-	$(CC) $(CFLAGS) -MMD -MP -o $@ -c $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -o $@ -c $<
 
 %.o: %.c
-	$(CC) $(CFLAGS) -MMD -MP -o $@ -c $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -o $@ -c $<
 
 kernel: $(LSCRIPT) $(OBJ)
 	$(LD) -T$(LSCRIPT) -o $@ $(OBJ) $(LIBGCC)
