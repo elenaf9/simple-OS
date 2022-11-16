@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <stddef.h>
 
 #define DBGU 0xfffff200 // Debug Unit
 
@@ -77,7 +78,7 @@ void print_as_hex(unsigned int val) {
 
   char hex[50];
 
-  unsigned int i = 0;
+  int i = 0;
 
   write_char('0');
   write_char('x');
