@@ -16,7 +16,9 @@
 # Quellen
 #
 LSCRIPT = kernel.lds
-OBJ = system/start.o system/main.o lib/print.o
+OBJ = system/start.o system/entry.o
+OBJ += lib/print.o
+OBJ += driver/dbgu.o
 
 #
 # Konfiguration
