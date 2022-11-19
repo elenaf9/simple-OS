@@ -10,6 +10,9 @@ ivt:
     b handle_exception
 
 handle_exception:
-    stmfd sp!, {r0-r3, r12, r15}
+    stmfd sp!, {r0-r12, r14}
     bl interrupt_handler
-    ldmfd sp!, {r0-r3, r12, r15}^
+    ldmfd sp!, {r0-r12, r15}^
+
+
+

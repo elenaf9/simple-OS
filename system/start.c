@@ -1,14 +1,13 @@
 #include <dbgu.h>
-#include <print.h>
 #include <exceptions.h>
 #include <ivt.h>
-
+#include <print.h>
 
 // Trigger data abort exception.
 void trigger_abort(void) {
-    printf("before\n");
+  printf("before\n");
   *(volatile unsigned int *)0x90000000 = 0;
-    printf("after\n");
+  printf("after\n");
 }
 
 // Test function that echoes received chars via the debug unit.
@@ -27,5 +26,4 @@ int main(void) {
     i++;
   }
   reset();
-
 }
