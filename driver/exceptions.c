@@ -12,7 +12,3 @@ void remap_mc(void) {
 void interrupt_handler(void) {
     printf("Interrupt!\n");
 }
-
-
-
-
