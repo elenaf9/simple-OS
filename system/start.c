@@ -8,6 +8,9 @@ void trigger_abort(void) {
   printf("before\n");
   *(volatile unsigned int *)0x90000000 = 0;
   printf("after\n");
+  printf("before2\n");
+  asm("udf");
+  printf("after2\n");
 }
 
 // Test function that echoes received chars via the debug unit.
