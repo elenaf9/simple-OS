@@ -2,7 +2,7 @@
 ivt:
     nop
     b undefined_instruction
-    b handle_exception
+    b software_interrupt
     b handle_exception
     b data_abort
     nop
@@ -18,6 +18,12 @@ undefined_instruction:
     stmfd sp!, {r0-r12, r14}
     bl interrupt_handler
     ldmfd sp!, {r0-r12, r15}^
+
+software_interrupt:
+    stmfd sp!, {r0-r12, r14}
+    bl interrupt_handler
+    ldmfd sp!, {r0-r12, r15}^
+
 
 handle_exception:
 

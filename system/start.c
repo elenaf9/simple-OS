@@ -5,12 +5,15 @@
 
 // Trigger data abort exception.
 void trigger_abort(void) {
-  printf("before\n");
+  printf("test data_abort\n");
   *(volatile unsigned int *)0x90000000 = 0;
-  printf("after\n");
-  printf("before2\n");
+  printf("data_abort test successful\n");
+  printf("test undefined instruction\n");
   asm("udf");
-  printf("after2\n");
+  printf("undefined instruction test successful\n");
+  printf("test software interrupt\n");
+  asm("swi 2");
+  printf("software interrupt test successful\n");
 }
 
 // Test function that echoes received chars via the debug unit.
