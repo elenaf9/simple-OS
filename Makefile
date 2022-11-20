@@ -28,12 +28,12 @@ CC = arm-none-eabi-gcc
 LD = arm-none-eabi-ld
 OBJCOPY = arm-none-eabi-objcopy
 
-#Flags zum Debuggen
-#CFLAGS += -g -Og
 
 CFLAGS = -Wall -Wextra -ffreestanding -mcpu=arm920t -O2
 CPPFLAGS = -Iinclude
 
+#Flags zum Debuggen
+#CFLAGS += -g -Og
 
 #LIBGCC := $(shell $(CC) -print-libgcc-file-name)
 
