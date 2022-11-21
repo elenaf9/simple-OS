@@ -14,58 +14,47 @@ reset:
     bl handle_reset
     
 undefined_instruction:
-    stmfd sp!, {r0-r3, r12, r14}
-
+    stmfd sp!, {r0-r4, r12, lr}
+    mov r4, lr
+    sub r4, #4 // Instruction that triggered the exception.
     bl disable_interrupt
+    mov r0, r4
     bl handle_undefined_instruction
     bl enable_interrupt
-
-    ldmfd sp!, {r0-r3, r12, r15}^
+    ldmfd sp!, {r0-r4, r12, pc}^
 
 software_interrupt:
-    stmfd sp!, {r0-r3, r12, r14}
-
-    bl disable_interrupt
+    stmfd sp!, {lr}
     bl handle_software_interrupt
-    bl enable_interrupt
-
-    ldmfd sp!, {r0-r3, r12, r15}^
+    ldmfd sp!, {pc}^
 
 data_abort:
-    stmfd sp!, {r0-r3, r12, r14}
-
+    stmfd sp!, {r0-r3, r12, lr}
     bl disable_interrupt
     bl handle_data_abort
     bl enable_interrupt
-
-    ldmfd sp!, {r0-r3, r12, r15}^
+    ldmfd sp!, {r0-r3, r12, pc}^
 
 prefetched_abort:
-    stmfd sp!, {r0-r3, r12, r14}
-
+    stmfd sp!, {r0-r3, r12, lr}
     bl disable_interrupt
-    bl handle_prefetched_abort
+    bl handle_data_abort
     bl enable_interrupt
-
-    ldmfd sp!, {r0-r3, r12, r15}^
+    ldmfd sp!, {r0-r3, r12, pc}^
 
 irq:
-    stmfd sp!, {r0-r3, r12, r14}
-
+    stmfd sp!, {r0-r3, r12, lr}
     bl disable_interrupt
     bl handle_irq
     bl enable_interrupt
-
-    ldmfd sp!, {r0-r3, r12, r15}^
+    ldmfd sp!, {r0-r3, r12, pc}^
 
 fiq:
-    stmfd sp!, {r0-r3, r12, r14}
-
+    stmfd sp!, {r0-r3, r12, lr}
     bl disable_interrupt
     bl handle_fiq
     bl enable_interrupt
-
-    ldmfd sp!, {r0-r3, r12, r15}^
+    ldmfd sp!, {r0-r3, r12, pc}^
 
 
 

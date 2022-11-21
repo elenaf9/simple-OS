@@ -45,7 +45,7 @@ int main(void) {
         trigger_software_interrupt();
         break;
       default:
-        printf("Invalid input %c.\nOnly 'a', 'u' and 's' are supported.\n\n", val);
+        printf("Invalid input '%c'.\nOnly 'a', 'u' and 's' are supported.\n\n", val);
         continue;
     }
     printf("...continuing program.\n\n");

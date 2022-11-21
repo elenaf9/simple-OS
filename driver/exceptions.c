@@ -27,15 +27,13 @@ void handle_data_abort(void) {
 
 void handle_prefetched_abort(void) {
   printf("Prefetched abort!\n");
-
 }
 void handle_software_interrupt(void) {
   printf("Software interrupt!\n");
-
 }
 
-void handle_undefined_instruction(void) {
-  printf("Undefined instruction!\n");
+void handle_undefined_instruction(int addr) {
+  printf("Undefined instruction triggered at %x!\n", addr);
 }
 
 void handle_irq(void)  {
