@@ -8,21 +8,44 @@
 void remap_mc(void) { *(volatile unsigned int *)USER_I = MC_RCR; }
 
 void disable_interrupt(void) {
-  asm volatile("push {r0,r1};"
-               "mrs r1, cpsr;"
+  asm volatile("mrs r1, cpsr;"
                "mov r0, #0xC0;"
                "orr r1, r0;"
-               "msr cpsr, r1;"
-               "pop {r0, r1};");
+               "msr cpsr, r1;");
 }
 
 void enable_interrupt(void) {
-  asm volatile("push {r0, r1};"
-               "mrs r1, cpsr;"
+  asm volatile("mrs r1, cpsr;"
                "mov r0, #0xFFFFFF3F;"
                "and r1, r0;"
-               "msr cpsr, r1;"
-               "pop {r0, r1};");
+               "msr cpsr, r1;");
 }
 
-void interrupt_handler(void) { printf("Interrupt!\n"); }
+void handle_data_abort(void) {
+  printf("Data abort!\n");
+}
+
+void handle_prefetched_abort(void) {
+  printf("Prefetched abort!\n");
+
+}
+void handle_software_interrupt(void) {
+  printf("Software interrupt!\n");
+
+}
+
+void handle_undefined_instruction(void) {
+  printf("Undefined instruction!\n");
+}
+
+void handle_irq(void)  {
+  printf("Interrupt!\n");
+}
+
+void handle_fiq(void) {
+  printf("Fast Interrupt!\n");
+}
+
+void handle_reset(void) {
+  printf("Resetting...\n");
+}
