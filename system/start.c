@@ -5,15 +5,21 @@
 
 // Trigger data abort exception.
 void trigger_abort(void) {
-  printf("test data_abort\n");
+  printf("Triggering data abort...\n");
   *(volatile unsigned int *)0x90000000 = 0;
-  printf("data_abort test successful\n");
-  printf("test undefined instruction\n");
+}
+
+// Trigger undefined instruction.
+void trigger_undefined_instruction(void) {
+  printf("Triggering undefined instruction...\n");
   asm("udf");
-  printf("undefined instruction test successful\n");
-  printf("test software interrupt\n");
+}
+
+
+// Trigger software interrupt.
+void trigger_software_interrupt(void) {
+  printf("Triggering software interrupt...\n");
   asm("swi 2");
-  printf("software interrupt test successful\n");
 }
 
 // Test function that echoes received chars via the debug unit.
@@ -21,15 +27,28 @@ int main(void) {
   remap_mc();
   init_dbgu();
 
-  // trigger exception
-  trigger_abort();
-
-  int i = 0;
+  printf("## Test exception handling ##\nThe following chars are accepted for triggering different exceptions:\n");
+  printf("- 'a': Trigger data abort exception.\n");
+  printf("- 'u': Trigger undefined-instruction exception.\n");
+  printf("- 's': Trigger software interrupt.\n\n");
 
   while (1) {
     char val = read_char();
-    printf("[%x] %s: %c, pointer:%p\n", i, "Received", val, &val);
-    i++;
+    switch (val) {
+      case 'a':
+        trigger_abort();
+        break;
+      case 'u':
+        trigger_undefined_instruction();
+        break;
+      case 's':
+        trigger_software_interrupt();
+        break;
+      default:
+        printf("Invalid input %c.\nOnly 'a', 'u' and 's' are supported.\n\n", val);
+        continue;
+    }
+    printf("...continuing program.\n\n");
   }
   reset();
 }
