@@ -10,6 +10,8 @@
 #define AIC_IECR 0x120
 #define AIC_EOICR 0x130
 
+extern void *irq;
+
 void test() {
   printf("Test\n");
   mem_write_u32(AIC_BASE_ADDR + AIC_EOICR, 42);
@@ -21,5 +23,7 @@ void init_aic(void) {
 
   mem_write_u32(AIC_BASE_ADDR + AIC_IECR, 1 << 1);
 
-  mem_write_u32(AIC_BASE_ADDR + AIC_SVR, (unsigned int)test);
+  mem_write_u32(AIC_BASE_ADDR + AIC_SVR, 0x20);
+
+  printf("aic enabled\n");
 }

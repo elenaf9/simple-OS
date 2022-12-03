@@ -21,7 +21,8 @@ OBJ += lib/print.o
 OBJ += driver/dbgu.o
 OBJ += driver/exceptions.o
 OBJ += driver/aic.o
-
+OBJ += driver/system_timer.o
+OBJ += driver/mem.o
 #
 # Konfiguration
 #

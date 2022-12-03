@@ -1,4 +1,5 @@
 .section .ivt, "ax", %progbits
+.global irq
 ivt:
     b reset
     b undefined_instruction
