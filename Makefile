@@ -20,6 +20,7 @@ OBJ = system/ivt.o system/start.o system/entry.o
 OBJ += lib/print.o
 OBJ += driver/dbgu.o
 OBJ += driver/exceptions.o
+OBJ += driver/aic.o
 
 #
 # Konfiguration

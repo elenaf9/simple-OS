@@ -1,3 +1,5 @@
+#include <mem.h>
+
 #define DBGU 0xfffff200 // Debug Unit
 
 #define DBGU_CR 0x0000  // Debug unit control register
@@ -21,14 +23,6 @@
 #define DBGU_RHR 0x0018 // Receive holding register
 #define DBGU_THR 0x001C // Transmit holding register
 
-static inline void write_u32(unsigned int addr, unsigned int val) {
-  *(volatile unsigned int *)addr = val;
-}
-
-static inline unsigned int read_u32(unsigned int addr) {
-  return *(volatile unsigned int *)addr;
-}
-
 static inline unsigned int is_set(unsigned int addr, unsigned int bit) {
   if ((*(volatile unsigned int *)addr & bit) == bit) {
     return 1;
@@ -37,15 +31,17 @@ static inline unsigned int is_set(unsigned int addr, unsigned int bit) {
   }
 }
 
-// Enable the debug unit receiver and transmitter.
-void init_dbgu(void) {
-  write_u32(DBGU + DBGU_CR, RXEN | TXEN);
+static inline unsigned int read_u32(unsigned int addr) {
+  return *(volatile unsigned int *)addr;
+  while (!is_set(DBGU + DBGU_SR, RXRDY)) {
+  }
 }
 
+// Enable the debug unit receiver and transmitter.
+void init_dbgu(void) { mem_write_u32(DBGU + DBGU_CR, RXEN | TXEN); }
+
 // Reset the debug unit receiver, transmitter, and status bits.
-void reset(void) {
-  write_u32(DBGU + DBGU_CR, RSTRX | RSTTX | RSTSTA);
-}
+void reset(void) { mem_write_u32(DBGU + DBGU_CR, RSTRX | RSTTX | RSTSTA); }
 
 // Write a single char to the transmitter.
 void write_char(char val) {
@@ -53,10 +49,10 @@ void write_char(char val) {
   while (!is_set(DBGU + DBGU_SR, TXRDY)) {
   }
   // Write value
-  write_u32(DBGU + DBGU_THR, val);
-//   // Wait for value to be transmitted.
-//   while (!is_set(DBGU + DBGU_SR, TXEMPTY)) {
-//   }
+  mem_write_u32(DBGU + DBGU_THR, val);
+  //   // Wait for value to be transmitted.
+  //   while (!is_set(DBGU + DBGU_SR, TXEMPTY)) {
+  //   }
 }
 
 // Read a single char from the receiver.

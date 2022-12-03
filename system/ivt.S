@@ -63,7 +63,7 @@ irq:
 
     stmfd sp!, {r1-r3, r12, r14}
 
-    bl enable_interrupt
+    bl handle_irq
 
     ldmfd sp!, {r1-r3, r12, r14}
 
