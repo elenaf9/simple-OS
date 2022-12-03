@@ -1,7 +1,6 @@
 #include <aic.h>
 #include <dbgu.h>
 #include <exceptions.h>
-#include <ivt.h>
 #include <print.h>
 #include <system_timer.h>
 
