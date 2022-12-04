@@ -24,7 +24,8 @@ void handle_irq(void) {
   } else if (is_dbgu_rx_ready()) {
     char c = get_char();
     int asci_code = c;
-    for (int i = 0; i < asci_code; i++) {
+    int i;
+    for (i = 0; i < asci_code; i++) {
       printf("%c", c);
       sleep(200); // sleep 0.2s
     }
