@@ -2,40 +2,42 @@
 .global _start
 _start:
     // Switch to each processor mode and set stack pointer
-    mrs r0, cpsr
-    and r0, #0xFFFFFFE0
-    orr r0, #0b10001
-    msr cpsr, r0
-    ldr sp, =0x00200400
 
-    mrs r0, cpsr
-    and r0, #0xFFFFFFE0
-    orr r0, #0b10010
-    msr cpsr, r0
-    ldr sp, =0x00200600
+    // Mode FIQ
+    mov r0, #0b10001
+    bl  _switch_cpu_mode
+    mov r0, #0
+    bl _init_stack
 
-    mrs r0, cpsr
-    and r0, #0xFFFFFFE0
-    orr r0, #0b10111
-    msr cpsr, r0
-    ldr sp, =0x00200800
-    
-    mrs r0, cpsr
-    and r0, #0xFFFFFFE0
-    orr r0, #0b11011
-    msr cpsr, r0
-    ldr sp, =0x00200a00
-    
-    mrs r0, cpsr
-    and r0, #0xFFFFFFE0
-    orr r0, #0b11111
-    msr cpsr, r0
-    ldr sp, =0x00200c00
+    // Mode IRQ
+    mov r0, #0b10010
+    bl  _switch_cpu_mode
+    mov r0, #1
+    bl _init_stack
 
-    mrs r0, cpsr
-    and r0, #0xFFFFFFE0
-    orr r0, #0b10011
-    msr cpsr, r0
-    ldr sp, =0x00200e00
+    // Mode Abort
+    mov r0, #0b10111
+    bl  _switch_cpu_mode
+    mov r0, #2
+    bl _init_stack
 
+    // Mode Undefined
+    mov r0, #0b11011
+    bl  _switch_cpu_mode
+    mov r0, #3
+    bl _init_stack 
+
+    // Mode System (also initializes user stack)
+    mov r0, #0b11111
+    bl  _switch_cpu_mode
+    mov r0, #4
+    bl _init_stack
+
+    // Mode Supervisor
+    mov r0, #0b10011
+    bl  _switch_cpu_mode
+    mov r0, #5
+    bl _init_stack
+
+    // Jump to C main function
     bl main

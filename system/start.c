@@ -1,7 +1,6 @@
 #include <aic.h>
 #include <dbgu.h>
-#include <exceptions.h>
-#include <print.h>
+#include <mem.h>
 #include <system_timer.h>
 #include <tests.h>
 
@@ -11,6 +10,8 @@ int main(void) {
   init_dbgu();
   init_aic();
   init_st();
+
+  trigger_undefined_instruction();
 
   for (;;);
   reset();

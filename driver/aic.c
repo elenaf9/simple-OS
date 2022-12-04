@@ -1,6 +1,6 @@
 
 #include <mem.h>
-#include <exceptions.h>
+#include <processor.h>
 #include <print.h>
 
 #define AIC_BASE_ADDR 0xFFFFF000
@@ -24,7 +24,7 @@ void init_aic(void) {
   mem_write_u32(AIC_BASE_ADDR + AIC_SVR1, IVT_IRQ);
 
   // Enable interrupt in current processor mode
-  enable_interrupt();
+  _enable_interrupt();
 
   printf("aic enabled\n");
 }

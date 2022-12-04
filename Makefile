@@ -16,7 +16,7 @@
 # Quellen
 #
 LSCRIPT = kernel.lds
-OBJ = system/ivt.o system/start.o system/entry.o
+OBJ = system/ivt.o system/start.o system/entry.o system/processor.o
 OBJ += lib/print.o
 OBJ += lib/tests.o
 OBJ += driver/dbgu.o
