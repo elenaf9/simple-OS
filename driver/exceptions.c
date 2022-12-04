@@ -18,14 +18,15 @@ void handle_undefined_instruction(int addr) {
   printf("Undefined instruction triggered at %x!\n", addr);
 }
 
-void handle_irq() {
+void handle_irq(void) {
   if (is_st_interrupt()) {
     printf("!\n");
   } else if (is_dbgu_rx_ready()) {
     char c = get_char();
-    for (int i = 0; i < 10; i++) {
+    int asci_code = c;
+    for (int i = 0; i < asci_code; i++) {
       printf("%c", c);
-      sleep(100); // sleep 100ms
+      sleep(200); // sleep 0.2s
     }
   } else {
     printf("Interrupt!\n");

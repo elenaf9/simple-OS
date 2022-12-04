@@ -2,6 +2,7 @@
 #include <mem.h>
 #include <processor.h>
 #include <print.h>
+#include <irq.h>
 
 #define AIC_BASE_ADDR 0xFFFFF000
 #define AIC_SMR1 0X04 // Source Mode Register 1 
@@ -12,7 +13,7 @@
 #define AIC_IECR 0x120 // Interrupt Enable Command Register
 #define SYS (1 << 1) // Interrupt Source 1
 
-#define AIC_EOICR 0x130 //End of Interrupt Command Register
+#define AIC_EOICR 0x130 // End of Interrupt Command Register
 
 #define IVT_IRQ 0x18
 
@@ -21,11 +22,15 @@ void init_aic(void) {
   mem_write_u32(AIC_BASE_ADDR + AIC_IECR, SYS);
 
   // Handler address for IRQ
-  mem_write_u32(AIC_BASE_ADDR + AIC_SVR1, IVT_IRQ);
+  int irq_pointer = (volatile unsigned int)_irq;
+  mem_write_u32(AIC_BASE_ADDR + AIC_SVR1, irq_pointer);
 
   // Enable interrupt in current processor mode
-  _enable_interrupt();
+  _cpu_enable_interrupt();
 
   printf("aic enabled\n");
 }
 
+void end_of_interrupt(void) {
+  mem_write_u32(AIC_BASE_ADDR + AIC_EOICR, 1);
+}

@@ -29,8 +29,8 @@ _init_stack:
 
     bx lr
 
-.global _disable_interrupt
-_disable_interrupt:
+.global _cpu_disable_interrupt
+_cpu_disable_interrupt:
     mrs r1, cpsr
     mov r0, #0xC0
     orr r1, r0
@@ -38,8 +38,8 @@ _disable_interrupt:
 
     bx lr
 
-.global _enable_interrupt
-_enable_interrupt:
+.global _cpu_enable_interrupt
+_cpu_enable_interrupt:
     mrs r1, cpsr
     mov r0, #0xFFFFFF3F
     and r1, r0

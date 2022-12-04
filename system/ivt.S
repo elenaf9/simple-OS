@@ -5,8 +5,8 @@ ivt:
  	ldr	pc, _jt_swi		/* Software Interrupt */ 
  	ldr	pc, _jt_pref_abort	/* Prefetch Abort */ 
  	ldr	pc, _jt_data_abort	/* Data Abort */ 
- 	nop	/* Reserved */ 
- 	ldr	pc, _jt_irq // ldr pc,[pc,#-0xF20]	/* Interrupt */ 
+ 	nop
+ 	ldr pc, [pc, #-0xF20]	// AIC Interrupt vector table
  	ldr	pc, _jt_fiq	/* Fast Interrupt */ 
 
 _jt_reset:      .word _reset
@@ -14,7 +14,6 @@ _jt_undef:	    .word _undefined_instruction
 _jt_swi:		.word _software_interrupt
 _jt_pref_abort: .word _prefetched_abort
 _jt_data_abort:	.word _data_abort
-_jt_irq:	    .word _irq
 _jt_fiq:	    .word _fiq
 
 .section .text
@@ -47,15 +46,7 @@ _prefetched_abort:
     bl handle_data_abort
     // ldmfd sp!, {r0-r3, r12, pc}^
     b _Lend
-
-_irq:
-    sub lr, lr, #4
-    stmfd sp!, {r0-r3, r12, lr}
-    mov r0, lr
-    bl handle_irq
-    ldmfd sp!, {r0-r3, r12, pc}^
-
-
+    
 _fiq:
     stmfd sp!, {r0-r3, r12, lr}
     bl handle_fiq
