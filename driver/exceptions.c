@@ -27,7 +27,7 @@ void handle_irq(void) {
     int i;
     for (i = 0; i < asci_code; i++) {
       printf("%c", c);
-      sleep(200); // sleep 0.2s
+      busy_wait(200); // wait 0.2s
     }
   } else {
     printf("Interrupt!\n");

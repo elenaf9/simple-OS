@@ -26,7 +26,7 @@ int is_st_interrupt(void){
   return status & PITS;
 }
 
-void sleep(int ms) {
+void busy_wait(int ms) {
   int i = 0;
   while (i < ms) {
     while (!mem_is_set(ST_ADDR + ST_SR, RTTIN)) {};
