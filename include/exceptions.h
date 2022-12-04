@@ -1,5 +1,5 @@
-#ifndef REMAP_H
-#define REMAP_H
+#ifndef EXCEPTIONS_H
+#define EXCEPTIONS_H
 
 void remap_mc(void);
 

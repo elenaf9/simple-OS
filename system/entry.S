@@ -39,8 +39,3 @@ _start:
     ldr sp, =0x00200e00
 
     bl main
-
-.Lend:
-b .Lend
-
-
