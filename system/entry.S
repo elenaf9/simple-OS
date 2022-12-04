@@ -40,7 +40,4 @@ _start:
 
     bl main
 
-.Lend:
-b .Lend
-
 

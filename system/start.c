@@ -29,31 +29,6 @@ int main(void) {
   init_aic();
   init_st();
 
-  printf("## Testinggggg exception handling ##\nThe following chars are "
-         "accepted for "
-         "triggering different exceptions:\n");
-  printf("- 'a': Trigger data abort exception.\n");
-  printf("- 'u': Trigger undefined-instruction exception.\n");
-  printf("- 's': Trigger software interrupt.\n\n");
-
-  while (1) {
-    char val = read_char();
-    switch (val) {
-    case 'a':
-      trigger_abort();
-      break;
-    case 'u':
-      trigger_undefined_instruction();
-      break;
-    case 's':
-      trigger_software_interrupt();
-      break;
-    default:
-      printf("Invalid input '%c'.\nOnly 'a', 'u' and 's' are supported.\n\n",
-             val);
-      continue;
-    }
-    printf("...continuing program.\n\n");
-  }
+  for (;;);
   reset();
 }

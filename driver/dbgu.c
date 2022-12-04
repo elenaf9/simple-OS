@@ -9,6 +9,9 @@
 #define TXEN (1 << 6)   // Enable TX
 #define RSTSTA (1 << 8) // Reset Status Bits
 
+#define DBGU_IER 0x0008 // Debug Unit Interrupt Enable Register
+#define IER_RXRDY (1 << 0) // Enable RXRDY Interrupt
+
 #define DBGU_SR 0x0014   // Debug unit status register
 #define RXRDY (1 << 0)   // Receiver Ready: Complete char received
 #define TXRDY (1 << 1)   // Transmitter Ready (To receive the next char)
@@ -26,6 +29,8 @@
 // Enable the debug unit receiver and transmitter.
 void init_dbgu(void) {
   mem_write_u32(DBGU + DBGU_CR, RXEN | TXEN);
+  // Enable interrupt on rx
+  mem_write_u32(DBGU + DBGU_IER, IER_RXRDY);
 }
 
 // Reset the debug unit receiver, transmitter, and status bits.
@@ -46,6 +51,10 @@ void write_char(char val) {
   }
 }
 
+int is_dbgu_rx_ready(void) {
+  return mem_is_set(DBGU + DBGU_SR, RXRDY);
+}
+
 char get_char(void) {
   // Read value
   char val = mem_read_u32(DBGU + DBGU_RHR);
@@ -55,7 +64,7 @@ char get_char(void) {
 // Read a single char from the receiver.
 char read_char(void) {
   // Wait until we received something
-  while (!mem_is_set(DBGU + DBGU_SR, RXRDY)) {
+  while (!is_dbgu_rx_ready()) {
   }
 
   return get_char();
