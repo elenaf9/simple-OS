@@ -1,4 +1,6 @@
 #include "print.h"
+#include <aic.h>
+#include <system_timer.h>
 #define USER_I 0xFFFFFF00 // User Interface
 
 #define MC_RCR (1 << 0) // Memory Control Remap Control Register -  Write-only
@@ -30,7 +32,15 @@ void handle_undefined_instruction(int addr) {
   printf("Undefined instruction triggered at %x!\n", addr);
 }
 
-void handle_irq(void) { printf("Interrupt!\n"); }
+void handle_irq(void) {
+  read_irq();
+  read_pit();
+  enable_interrupt();
+  clear_interrupt();
+  printf("Interrupt!\n");
+  disable_interrupt();
+  aknowledge_irq();
+}
 
 void handle_fiq(void) { printf("Fast Interrupt!\n"); }
 

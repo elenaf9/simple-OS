@@ -35,7 +35,7 @@ CFLAGS = -Wall -Wextra -ffreestanding -mcpu=arm920t -O2
 CPPFLAGS = -Iinclude
 
 #Flags zum Debuggen
-#CFLAGS += -g -Og
+CFLAGS += -g -Og
 
 #LIBGCC := $(shell $(CC) -print-libgcc-file-name)
 

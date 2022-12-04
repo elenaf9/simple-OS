@@ -23,7 +23,7 @@
 #define DBGU_RHR 0x0018 // Receive holding register
 #define DBGU_THR 0x001C // Transmit holding register
 
-static inline unsigned int is_set(unsigned int addr, unsigned int bit) {
+unsigned int is_set(unsigned int addr, unsigned int bit) {
   if ((*(volatile unsigned int *)addr & bit) == bit) {
     return 1;
   } else {
@@ -31,7 +31,7 @@ static inline unsigned int is_set(unsigned int addr, unsigned int bit) {
   }
 }
 
-static inline unsigned int read_u32(unsigned int addr) {
+unsigned int read_u32(unsigned int addr) {
   return *(volatile unsigned int *)addr;
   while (!is_set(DBGU + DBGU_SR, RXRDY)) {
   }

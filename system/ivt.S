@@ -2,12 +2,12 @@
 .global irq
 ivt:
     b reset
-    b undefined_instruction
-    b software_interrupt
-    b prefetched_abort
-    b data_abort
-    nop
-    b irq
+    b undefined_instruction // 0x2c
+    b software_interrupt    // 0x30
+    b prefetched_abort      // 0x34
+    b data_abort            // 0x38
+    nop                     // 0x3c
+    b irq                   // 0x40
     b fiq
 
 
@@ -44,42 +44,11 @@ prefetched_abort:
     ldmfd sp!, {r0-r3, r12, pc}^
 
 irq:
-    //stmfd sp!, {r0-r3, r12, lr}
-    //bl disable_interrupt
-    //bl handle_irq
-    //bl enable_interrupt
-    //ldmfd sp!, {r0-r3, r12, pc}^
-    ldr pc,[pc,#-0xF20]
-
-    sub r14, r14, #4
-    stmfd sp!, {r14}
-
-    mrs r14,spsr
-    stmfd sp!, {r0,r14}
-
-    mrs r14, cpsr
-    bic r14, r14, #0x80 //set the I bit
-    orr r14, r14, #0x1F //switch to system mode
-    msr cpsr, r14
-
-    stmfd sp!, {r1-r3, r12, r14}
-
+    stmfd sp!, {r0-r3, r12, lr}
+    bl disable_interrupt
     bl handle_irq
-
-    ldmfd sp!, {r1-r3, r12, r14}
-
-    mrs r0,cpsr
-    bic r0, r0, #0x1F
-    orr r0, r0, #0x80
-    msr cpsr, r0
-
-    ldr r0, = 0xFFFFF000
-    str r0, [r0, #0x0130]
-
-    ldmfd sp!, {r0,r14}
-    msr spsr, r14
-
-    ldmfd sp!, {pc}^
+    bl enable_interrupt
+    ldmfd sp!, {r0-r3, r12, pc}^
 
 
 fiq:

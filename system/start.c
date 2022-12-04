@@ -29,6 +29,7 @@ int main(void) {
   init_dbgu();
   init_aic();
   init_st();
+  enable_interrupt();
 
   printf("## Testinggggg exception handling ##\nThe following chars are "
          "accepted for "
