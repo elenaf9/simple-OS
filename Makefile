@@ -18,6 +18,7 @@
 LSCRIPT = kernel.lds
 OBJ = system/ivt.o system/start.o system/entry.o
 OBJ += lib/print.o
+OBJ += lib/tests.o
 OBJ += driver/dbgu.o
 OBJ += driver/exceptions.o
 OBJ += driver/aic.o

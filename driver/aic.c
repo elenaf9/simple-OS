@@ -16,11 +16,6 @@
 
 #define IVT_IRQ 0x18
 
-void test() {
-  printf("Test\n");
-  mem_write_u32(AIC_BASE_ADDR + AIC_EOICR, 42);
-}
-
 void init_aic(void) {
   // Enable Interrupt source  1  (System: sys clock, dbgu, ..)
   mem_write_u32(AIC_BASE_ADDR + AIC_IECR, SYS);
@@ -33,3 +28,4 @@ void init_aic(void) {
 
   printf("aic enabled\n");
 }
+

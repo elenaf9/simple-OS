@@ -15,7 +15,7 @@
 
 #define ST_RTMR 0xC // Real-time Mode Register
 
-#define ST_INTERVAL 0x8000 // = 32769; This corresponds to 1s
+#define ST_INTERVAL 0x8000 // = 32768; This corresponds to 1s
 
 void set_timer(uint16_t timer) {
   mem_write_u32(ST_ADDR + ST_PIMR, timer);
