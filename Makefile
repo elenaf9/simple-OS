@@ -24,6 +24,7 @@ OBJ += driver/exceptions.o
 OBJ += driver/aic.o
 OBJ += driver/system_timer.o
 OBJ += driver/mem.o
+OBJ += system/threads.o
 #
 # Konfiguration
 #
