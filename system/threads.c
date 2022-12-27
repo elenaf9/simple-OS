@@ -1,6 +1,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <threads.h>
+#include <print.h>
+
 
 #define NUM_THREADS 16
 #define THREAD_STACK_SIZE 4096

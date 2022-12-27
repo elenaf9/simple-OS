@@ -8,4 +8,8 @@ struct pcb {
   size_t sp;
 };
 
+void init_idle_thread(void);
+void idle_thread(void);
+void thread_switch(void);
+
 #endif
