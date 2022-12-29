@@ -54,39 +54,32 @@ _cpu_enable_interrupt:
 // returns stack pointer
 _init_thread:
 
-    stmfd sp!, {r4-r12}
+    stmfd sp!, {r4-r12, r14}
 
     mov r4, sp
-    mov r5, lr
     mov r6, r1
     mov r7, r2
     mov r8, r3
 
     mov r1, #0x23000000 
     bl _init_stack
-    mov r1, sp
 
     // Create fresh context in the correct order so that 
     // the thread can run once _switch_thread is called for it.
 
-    // Save pointer to thread function in stack
+    mov r0, r7
+    mov r1, r8 
     mov lr, r6
-    stmfd sp!, {lr}
+    stmfd sp!, {r0-r1, r4-r12, lr}
 
-    stmfd sp!, {r1}
-
-    // save input parameters for run_thread function
-    stmfd sp!, {r7, r8}
-
-    // mov r2, #0b11111 // initial cpu state: no flags set, processor is in user-mode
-    // stmfd sp!, {r2} // save state to stack
+    mrs r2, spsr
+    stmfd sp!, {r2} // save state to stack
 
     mov r0, sp // return stack pointer in r0
 
-    mov lr, r5
     mov sp, r4
 
-    ldmfd sp!, {r4-r12}
+    ldmfd sp!, {r4-r12, r14}
 
     // return
     bx lr
@@ -94,40 +87,35 @@ _init_thread:
 .global _switch_thread
 // @r0 where to store the stack pointer of current thread
 // @r1 from where to load the stack pointer of the next thread
+//
+// Partly based on: Betriebssysteme WS 2022/23, Chapter-3, page 3-76
+// but adjusted since we are not in IRQ modus here.
 _switch_thread:
-     
-    // Store IRQ stack pointer, switch to thread stack instead
-    mov r2, sp
-    ldr sp, [r0] // load address stored in r0 into sp
-
-    stmfd sp!, {r14} // link register
-    stmfd sp!, {r2} // stack
     
-    stmfd sp!, {r2-r3} // dummy register save
+    stmfd sp!, {r2-r12, r14} // store context
 
-    // mrs r2, spsr // saved CPU state into r2
-    // stmfd sp!, {r2} // and then to Stack
+    mrs r2, spsr // saved CPU state into r2
+    stmfd sp!, {r2} // and then to Stack
 
-    // Already load address of next thread's sp
+    // Already load address of next thread's sp (&tcb->sp).
+    // 
     // This is needed because it is possible that r1 and r0 point to the same
-    // address (i.e. after init when running the idle thread the first time)
+    // address (i.e. after init when running the idle thread the first time).
+    // In that case the following instruction would overwrite [r1].
     ldr r1, [r1] 
 
-    str sp, [r0] // tcb->sp = sp
+    str sp, [r0] // Write-back stack pointer into the tcb->sp of the old thread's stack
     
     // switch to other process
-    mov sp, r1
+    mov sp, r1 // Move stack pointer to new stack
 
-    // // restore context
-    // ldmfd sp!, {r2} // CPU state to r2
-    // msr spsr, r2 // and then into saved state
+    // restore context
+    ldmfd sp!, {r2} // CPU state to r2
+    msr spsr, r2 // and then into saved state
 
-    ldmfd sp!, {r0, r1} // input parameter if thread runs for the first time
-    ldmfd sp!, {r2} // restore stack pointer
-    ldmfd sp!, {lr} // restore link register
+    // Move to r2 so its not overwritten in the next instruction
+    mov r3, r1
 
-    // Store thread stack, switch to back to IRQ stack
-    str sp, [r1] // tcb->sp = sp
-    mov sp, r2
+    ldmfd sp!, {r0-r1, r4-r12, r14} // restore context
 
     bx lr
