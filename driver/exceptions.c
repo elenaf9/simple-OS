@@ -1,7 +1,8 @@
+#include "aic.h"
 #include "dbgu.h"
 #include "print.h"
 #include "system_timer.h"
-#include <threads.h>
+#include "threads.h"
 
 void handle_data_abort(void) { printf("Data abort!\n"); }
 
@@ -13,20 +14,34 @@ void handle_undefined_instruction(int addr) {
   printf("Undefined instruction triggered at %x!\n", addr);
 }
 
+void print_char(int c) {
+  int asci_code = c;
+  int i;
+  for (i = 0; i < asci_code; i++) {
+    printf("%c", (char)c);
+    busy_wait(1000); // wait 0.5s
+  }
+}
+
 void handle_irq(void) {
-  if (is_st_interrupt()) {
-    thread_switch();
+  int is_st = is_st_interrupt();
+  int is_dbgu_rx = is_dbgu_rx_ready();
+  char c;
+  if (is_dbgu_rx) {
+    c = get_char();
+  }
+
+  end_of_interrupt();
+
+  if (is_st) {
     printf("!\n");
-  } else if (is_dbgu_rx_ready()) {
-    char c = get_char();
-    int asci_code = c;
-    int i;
-    for (i = 0; i < asci_code; i++) {
-      printf("%c", c);
-      busy_wait(200); // wait 0.2s
-    }
-  } else {
-    printf("Interrupt!\n");
+    thread_switch();
+  }
+  if (is_dbgu_rx) {
+    spawn_thread(print_char, (int)c);
+  }
+  if (!is_st && !is_dbgu_rx) {
+    printf("Other Interrupt!\n");
   }
 }
 

@@ -1,15 +1,11 @@
 #ifndef THREADS_H
 #define THREADS_H
 
-#include <stddef.h>
-struct pcb {
-  size_t id;
-  size_t pc;
-  size_t sp;
-};
+typedef void (*thread_fn)(int);
 
-void init_idle_thread(void);
-void idle_thread(void);
+void init_threading(void);
+int spawn_thread(thread_fn, int);
 void thread_switch(void);
+void assert_parameter_ok(int);
 
 #endif

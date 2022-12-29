@@ -4,6 +4,7 @@ _irq:
     // Adjust and save LR of current mode in current stack
     sub lr, lr, #4
     stmfd sp!, {lr}
+
      
     // Save SPSR and r0 in current stack
     mrs lr, spsr
@@ -18,6 +19,7 @@ _irq:
     // Switch to sys mode, enable interrupt
     mov r0, #0b11111
     bl _switch_cpu_mode
+
     bl _cpu_enable_interrupt
 
     // Use IRQ Stack
@@ -32,9 +34,6 @@ _irq:
 
     // Restore SP_usr, LR_usr
     ldm r4, {r13, r14}^
-
-    // Mark the End of Interrupt on the interrupt controller
-    bl end_of_interrupt
 
     ldmfd sp!, {r0-r12, lr}
     msr spsr, lr

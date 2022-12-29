@@ -13,7 +13,7 @@ int main(void) {
   init_dbgu();
   init_st();
 
-  init_idle_thread();
+  init_threading();
 
   for (;;)
     ;
