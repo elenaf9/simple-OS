@@ -38,7 +38,10 @@ void handle_irq(void) {
     thread_switch();
   }
   if (is_dbgu_rx) {
-    spawn_thread(print_char, (int)c);
+    if (spawn_thread(print_char, (int)c)) {
+      printf("Spawning thread failed!!");
+      return;
+    }
   }
   if (!is_st && !is_dbgu_rx) {
     printf("Other Interrupt!\n");

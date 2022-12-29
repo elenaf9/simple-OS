@@ -76,13 +76,14 @@ static void idle_thread(int error) {
 }
 
 void init_threading(void) {
-  // dummy_parameter
+
+  // Idle thread
   init_tcb(0, &idle_thread, 0);
 
   // init idle thread
   volatile struct tcb *new_tcb = &tcbs[0];
   new_tcb->element.next = &new_tcb->element;
-  new_tcb->element.next = &new_tcb->element;
+  new_tcb->element.prev = &new_tcb->element;
   runqueue = &new_tcb->element;
 
   // Init state of empty tcbs
@@ -111,9 +112,22 @@ int spawn_thread(thread_fn thread_fn, int thread_parameter) {
 
   // Insert as next thread to run_queue
   volatile struct tcb *new_tcb = &tcbs[i];
-  new_tcb->element.prev = runqueue;
+
+
+  // Insert as next thread except for threads that themselves
+  // did not run yet.
+  volatile struct list_elem *insert_after = runqueue;
+  while(insert_after->next != runqueue) {
+    if (insert_after->data->state != CREATED) {
+      // Position to be inserted.
+      break;
+    }
+    insert_after = insert_after->next;
+  }
+
+  new_tcb->element.prev = insert_after;
+  new_tcb->element.next = insert_after->next;
   new_tcb->element.prev->next = &new_tcb->element;
-  new_tcb->element.next = runqueue->next;
   new_tcb->element.next->prev = &new_tcb->element;
 
   return 0;
@@ -125,5 +139,7 @@ void thread_switch(void) {
     return;
   }
 
-  _switch_thread(&runqueue->data->sp, &runqueue->next->data->sp);
+  runqueue = runqueue->next;
+
+  _switch_thread(&runqueue->prev->data->sp, &runqueue->data->sp);
 }
