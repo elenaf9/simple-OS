@@ -19,7 +19,7 @@ void print_char(int c) {
   int i;
   for (i = 0; i < asci_code; i++) {
     printf("%c", (char)c);
-    busy_wait(1000); // wait 0.5s
+    busy_wait(100); // wait 0.5s
   }
 }
 

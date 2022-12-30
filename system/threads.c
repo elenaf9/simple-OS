@@ -10,7 +10,7 @@
 #define NUM_THREADS 16
 #define THREAD_STACK_SIZE 4096
 
-enum thread_state { CREATED, ACTIVE, STOPPED };
+enum thread_state { CREATED, ACTIVE, FINISHED, FREE };
 
 struct list_elem {
   volatile struct list_elem *prev;
@@ -41,9 +41,15 @@ static void run_thread(thread_fn thread_fn, int thread_parameter) {
   // Run thread
   thread_fn(thread_parameter);
 
-  runqueue->data->state = STOPPED;
-  runqueue->next->prev = runqueue->prev;
-  runqueue->prev->next = runqueue->next;
+  runqueue->data->state = FINISHED;
+
+  // If this was the only thread remaining enqueue idle thread
+  if (runqueue->next == runqueue) {
+    tcbs[0].element.prev = runqueue;
+    tcbs[0].element.next = runqueue;
+    runqueue->next = &tcbs[0].element;
+    runqueue->prev = &tcbs[0].element;
+  }
 
   for (;;)
     ;
@@ -69,27 +75,26 @@ static void idle_thread(int error) {
     printf("PANIC: wrong parameter!!!");
     asm("udf");
   }
-  while (1) {
-    printf("Idle\n");
-    busy_wait(1000);
-  }
+  printf("Idle\n");
+  while (1) {}
 }
 
 void init_threading(void) {
 
-  // Idle thread
+  // Init idle thread
   init_tcb(0, &idle_thread, 0);
 
-  // init idle thread
   volatile struct tcb *new_tcb = &tcbs[0];
   new_tcb->element.next = &new_tcb->element;
   new_tcb->element.prev = &new_tcb->element;
+  new_tcb->state = CREATED;
   runqueue = &new_tcb->element;
 
   // Init state of empty tcbs
   int i;
   for (i = 1; i < NUM_THREADS + 1; i++) {
-    tcbs[i].state = STOPPED;
+    tcbs[i].state = FREE;
+    tcbs[i].id = i;
   }
 }
 
@@ -98,7 +103,7 @@ int spawn_thread(thread_fn thread_fn, int thread_parameter) {
   int is_space = 0;
   int i;
   for (i = 1; i < NUM_THREADS + 1; i++) {
-    if (tcbs[i].state == STOPPED) {
+    if (tcbs[i].state == FREE) {
       is_space = 1;
       break;
     }
@@ -134,12 +139,27 @@ int spawn_thread(thread_fn thread_fn, int thread_parameter) {
 }
 
 void thread_switch(void) {
-  if (runqueue->next == runqueue && runqueue->data->state != CREATED) {
-    printf("Only idle thread active -  no thread switch needed.\n");
+  if (runqueue->next == runqueue && runqueue->data->state == ACTIVE) {
+    // Only idle thread active -  no thread switch needed.
     return;
   }
 
+  volatile unsigned int *prev_sp = &runqueue->data->sp;
+
   runqueue = runqueue->next;
 
-  _switch_thread(&runqueue->prev->data->sp, &runqueue->data->sp);
+
+  // If previous thread finished mark as free.
+  if (runqueue->prev->data->state == FINISHED) {
+    runqueue->prev->data->state = FREE;
+  }
+
+
+  // If prev thread was idle thread or is free (=finished), remove from queue. 
+  if (runqueue->prev->data->id == 0 || runqueue->prev->data->state == FREE) {
+    runqueue->prev = runqueue->prev->prev;
+    runqueue->prev->next = runqueue;
+  }
+
+  _switch_thread(prev_sp, &runqueue->data->sp);
 }
