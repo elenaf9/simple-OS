@@ -54,35 +54,60 @@ _cpu_enable_interrupt:
 // returns stack pointer
 _init_thread:
 
-    stmfd sp!, {r4-r12, r14}
+    stmfd sp!, {r4-r8, lr}
 
     mov r4, sp
     mov r6, r1
     mov r7, r2
     mov r8, r3
 
+    // Init stack for thread
     mov r1, #0x23000000 
-    bl _init_stack
+    bl _init_stack  
+    
+    // Bottom of this thread's user mode stack
+    // Offset 64B so that the first 64B can be used
+    // as stack in the IRQ mode
+    sub r2, sp, #0x100
 
+    // == State that will be popped in _irq.
+
+    // Pointer to run_thread.
+    // Will be loaded into program counter
+    stmfd sp!, {r6} 
+
+    // Will be loaded into {r0-r3, r12}
+    // r0 and r1 are parameters for the thread function, 
+    // rest is dummy.
+    stmfd sp!, {r7-r10, r12} 
+
+
+    // == State that will be popped int _switch_thread
+    //
     // Create fresh context in the correct order so that 
     // the thread can run once _switch_thread is called for it.
 
-    mov r0, r7
-    mov r1, r8 
-    mov lr, r6
-    stmfd sp!, {r0-r1, r4-r12, lr}
+    // Will be popped into pc at end of _switch_thread.
+    ldr lr, _jt_end_irq
+    stmfd sp!, {lr}
 
-    mrs r2, spsr
-    stmfd sp!, {r2} // save state to stack
 
-    mov r0, sp // return stack pointer in r0
+    // Use newly initiated stack, which will be popped into SP_usr
+    stmfd sp!, {r2}
+    // dummy user register (won't be read since thread runs for the first time)
+    stmfd sp!, {r0-r12, r14}
+
+    mov r3, #0b11111 // Run thread in system mode
+    stmfd sp!, {r3} // save state to stack
+
+    mov r0, sp // return (IRQ-mode) stack pointer in r0
 
     mov sp, r4
 
-    ldmfd sp!, {r4-r12, r14}
+    ldmfd sp!, {r4-r8, pc}
 
-    // return
-    bx lr
+
+_jt_end_irq: .word _end_irq
 
 .global _switch_thread
 // @r0 where to store the stack pointer of current thread
@@ -91,31 +116,39 @@ _init_thread:
 // Partly based on: Betriebssysteme WS 2022/23, Chapter-3, page 3-76
 // but adjusted since we are not in IRQ modus here.
 _switch_thread:
-    
-    stmfd sp!, {r2-r12, r14} // store context
 
-    mrs r2, spsr // saved CPU state into r2
-    stmfd sp!, {r2} // and then to Stack
+    stmfd sp!, {r14}
+
+    // user registers
+    stmfd sp!, {r13}^
+    stmfd sp!, {r0-r12, r14}^
+
+    // saved CPU state into R2
+    mrs r2, spsr
+    stmfd sp!, {r2}
 
     // Already load address of next thread's sp (&tcb->sp).
     // 
     // This is needed because it is possible that r1 and r0 point to the same
     // address (i.e. after init when running the idle thread the first time).
     // In that case the following instruction would overwrite [r1].
-    ldr r1, [r1] 
-
-    str sp, [r0] // Write-back stack pointer into the tcb->sp of the old thread's stack
+    ldr r2, [r1] 
     
-    // switch to other process
-    mov sp, r1 // Move stack pointer to new stack
+    // Write-back stack pointer into the tcb->sp of the old thread's stack
+    str sp, [r0]
+    
 
-    // restore context
-    ldmfd sp!, {r2} // CPU state to r2
-    msr spsr, r2 // and then into saved state
+    // == Switch to other process
 
-    // Move to r2 so its not overwritten in the next instruction
-    mov r3, r1
+    mov sp, r2 // Move stack pointer to new stack
 
-    ldmfd sp!, {r0-r1, r4-r12, r14} // restore context
+    // CPU state
+    ldmfd sp!, {r2}
+    msr spsr, r2
 
-    bx lr
+
+    // user registers
+    ldmfd sp!, {r0-r12, r14}^
+    ldmfd sp!, {r13}^
+
+    ldmfd sp!, {r15}
