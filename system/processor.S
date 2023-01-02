@@ -97,7 +97,7 @@ _init_thread:
     // dummy user register (won't be read since thread runs for the first time)
     stmfd sp!, {r0-r12, r14}
 
-    mov r3, #0b11111 // Run thread in system mode
+    mov r3, #0b10000 // Run thread in user mode
     stmfd sp!, {r3} // save state to stack
 
     mov r0, sp // return (IRQ-mode) stack pointer in r0
