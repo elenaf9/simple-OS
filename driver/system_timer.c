@@ -15,7 +15,7 @@
 
 #define ST_RTMR 0xC // Real-time Mode Register
 
-#define ST_INTERVAL 0x8000 // = 32768; This corresponds to 1s
+#define ST_INTERVAL 0x8000/2 // = 32768:2; This corresponds to 0.5s
 
 void set_timer(uint16_t timer) { mem_write_u32(ST_ADDR + ST_PIMR, timer); }
 
@@ -40,7 +40,7 @@ void init_st(void) {
   mem_write_u32(ST_ADDR + ST_IER, 1 << 0);
 
   // init rt timer to increment its counter every ~1ms
-  mem_write_u32(ST_ADDR + ST_RTMR, (ST_INTERVAL / 10000));
+  mem_write_u32(ST_ADDR + ST_RTMR, (ST_INTERVAL / 5000));
 
   printf("st enabled\n");
 }

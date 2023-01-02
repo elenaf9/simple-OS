@@ -4,4 +4,6 @@
 __attribute__((format(printf, 1, 2)))
 int printf(char *fmt, ...);
 
+void periodically_print_char(int);
+
 #endif

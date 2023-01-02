@@ -12,7 +12,9 @@ _irq:
 
 _end_irq:
 
+    bl end_of_interrupt
+
     ldmfd sp!, {r0-r3, r12}
 
-    // Restore adjusted LR_irq from IRQ stack directly in the PC
+    // Restore adjusted LR_irq from IRQ stack directly in the PC.
     ldmfd sp!, {pc}^

@@ -4,18 +4,20 @@
 #include <processor.h>
 #include <threads.h>
 
-// Place TCBs somewhere in RAM
-#define TCBS_BASE 0x22000000
-
 #define NUM_THREADS 16
-#define THREAD_STACK_SIZE 4096
+#define STACK_SIZE 0x1000 // 4kB
+#define THREADS_STACK_BOTTOM 0x23000000 
+
+// Since the stack grows towards 0 we can place the TCBS at the same address,
+// i.e. behind the bottom of the first thread's stack
+#define TCBS_BASE THREADS_STACK_BOTTOM
 
 enum thread_state { CREATED, ACTIVE, FINISHED, FREE };
 
 struct list_elem {
-  volatile struct list_elem *prev;
-  volatile struct list_elem *next;
-  volatile struct tcb *data;
+  struct list_elem *prev;
+  struct list_elem *next;
+  struct tcb *data;
 };
 
 struct tcb {
@@ -25,21 +27,24 @@ struct tcb {
   struct list_elem element;
 };
 
-static volatile struct tcb *const tcbs = (struct tcb *)TCBS_BASE;
+static struct tcb *const tcbs = (struct tcb *)TCBS_BASE;
 
-volatile struct list_elem *runqueue;
+struct list_elem *runqueue;
+
+static int const smoke_test_parameter = 42;
 
 // First parameter will be set to 0 from OS.
 // If it holds a value != 0 passing the parameters failed and
 // the thread can not trust any following parameters.
 typedef void (*thread_fn)(int);
 
-static void run_thread(thread_fn thread_fn, int thread_parameter) {
+
+static void run_thread(thread_fn thread_function, int thread_parameter) {
 
   runqueue->data->state = ACTIVE;
 
-  // Run thread
-  thread_fn(thread_parameter);
+  // Run thread.
+  thread_function(thread_parameter);
 
   runqueue->data->state = FINISHED;
 
@@ -55,13 +60,19 @@ static void run_thread(thread_fn thread_fn, int thread_parameter) {
     ;
 }
 
-// Create new TCB for thread.
-// Note: tcb.list_elem.{prev,next} is not set.
-static void init_tcb(unsigned int index, thread_fn thread_fn,
+// Initialize the TCB at `index` in the TCB list so it runs the `thread_function`
+// with the `thread_parameter` once the thread is next in the runqueue.
+//
+// Note: tcb.list_elem.{prev,next} are not set and need to be configured depending
+// on where the thread is inserted in the runqueue.
+static void init_tcb(unsigned int index, thread_fn thread_function,
                      int thread_parameter) {
 
-  volatile struct tcb *new_tcb = &tcbs[index];
-  new_tcb->sp = _init_thread(index, &run_thread, thread_fn, thread_parameter);
+  struct tcb *new_tcb = &tcbs[index];
+  int stack_bottom = (THREADS_STACK_BOTTOM - index*STACK_SIZE);
+  // Initialized a stack for this thread so that the correct context is loaded on 
+  // thread switch.
+  new_tcb->sp = _init_thread_stack(stack_bottom, &run_thread, thread_function, thread_parameter);
   new_tcb->id = index;
   new_tcb->state = CREATED;
   new_tcb->element.data = new_tcb;
@@ -69,22 +80,27 @@ static void init_tcb(unsigned int index, thread_fn thread_fn,
   return;
 }
 
-static void idle_thread(int error) {
-  if (error) {
-    // Something went wrong with parameter list.
-    printf("PANIC: wrong parameter!!!");
-    asm("udf");
+// Idle thread that runs if no other thread is active.
+//
+// Started with a dummy parameter to smoke-test that spawning
+// threads with a parameter properly works.
+static void idle_thread(int p) {
+  if (p != smoke_test_parameter) {
+    // Something went wrong with the parameter.
+    printf("PANIC: wrong parameter!!!\n");
+    return;
   }
-  printf("Idle\n");
   while (1) {}
 }
 
+// Initiate threading and insert an idle thread that
+// runs when no other thread is active.
 void init_threading(void) {
 
   // Init idle thread
-  init_tcb(0, &idle_thread, 0);
+  init_tcb(0, &idle_thread, smoke_test_parameter);
 
-  volatile struct tcb *new_tcb = &tcbs[0];
+  struct tcb *new_tcb = &tcbs[0];
   new_tcb->element.next = &new_tcb->element;
   new_tcb->element.prev = &new_tcb->element;
   new_tcb->state = CREATED;
@@ -98,8 +114,11 @@ void init_threading(void) {
   }
 }
 
-int spawn_thread(thread_fn thread_fn, int thread_parameter) {
-  // search for free tcb
+// Spawn a new thread that executes the `thread_function` with the 
+// `thread_parameter` as function parameter.
+int spawn_thread(thread_fn thread_function, int thread_parameter) {
+
+  // Insert at a free slot in the TCBs array.
   int is_space = 0;
   int i;
   for (i = 1; i < NUM_THREADS + 1; i++) {
@@ -108,20 +127,17 @@ int spawn_thread(thread_fn thread_fn, int thread_parameter) {
       break;
     }
   }
-
   if (!is_space) {
     return 1;
   }
 
-  init_tcb(i, thread_fn, thread_parameter);
+  init_tcb(i, thread_function, thread_parameter);
 
-  // Insert as next thread to run_queue
-  volatile struct tcb *new_tcb = &tcbs[i];
-
+  struct tcb *new_tcb = &tcbs[i];
 
   // Insert as next thread except for threads that themselves
   // did not run yet.
-  volatile struct list_elem *insert_after = runqueue;
+  struct list_elem *insert_after = runqueue;
   while(insert_after->next != runqueue) {
     if (insert_after->data->state != CREATED) {
       // Position to be inserted.
@@ -138,22 +154,22 @@ int spawn_thread(thread_fn thread_fn, int thread_parameter) {
   return 0;
 }
 
+// Switch to the next thread in the runqueue if there are more than one threads
+// active.
 void thread_switch(void) {
   if (runqueue->next == runqueue && runqueue->data->state == ACTIVE) {
     // Only idle thread active -  no thread switch needed.
     return;
   }
 
-  volatile unsigned int *prev_sp = &runqueue->data->sp;
-
+  unsigned int *prev_sp = &runqueue->data->sp;
   runqueue = runqueue->next;
-
+  printf("\n");
 
   // If previous thread finished mark as free.
   if (runqueue->prev->data->state == FINISHED) {
     runqueue->prev->data->state = FREE;
   }
-
 
   // If prev thread was idle thread or is free (=finished), remove from queue. 
   if (runqueue->prev->data->id == 0 || runqueue->prev->data->state == FREE) {
