@@ -33,9 +33,7 @@ struct list_elem *runqueue;
 
 static int const smoke_test_parameter = 42;
 
-// First parameter will be set to 0 from OS.
-// If it holds a value != 0 passing the parameters failed and
-// the thread can not trust any following parameters.
+// Type of the functions that are executed in a thread.
 typedef void (*thread_fn)(int);
 
 
