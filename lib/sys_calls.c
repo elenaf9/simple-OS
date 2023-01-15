@@ -1,13 +1,9 @@
-int fork(){
-    asm(
-        "mov r0, lr"
-        
-    );
-    asm(
+int fork(void){
+    asm("mov r0, lr;" 
         "swi 1"
     );
 }
 
-int exit(){
+int exit(void) {
     asm("swi 2");
 }

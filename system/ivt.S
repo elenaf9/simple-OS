@@ -17,18 +17,6 @@ _jt_data_abort:	.word _data_abort
 _jt_fiq:	    .word _fiq
 
 .section .text
-_reset:
-    bl handle_reset
-    b _Lend
-    
-_undefined_instruction:
-    stmfd sp!, {r0-r4, r12, lr}
-    mov r4, lr
-    sub r4, #4 // Instruction that triggered the exception.
-    mov r0, r4
-    bl handle_undefined_instruction
-    ldmfd sp!, {r0-r4, r12, pc}^
-    b _Lend
 
 _software_interrupt:
     ldr r1, [lr,#-4]
@@ -44,54 +32,41 @@ _software_interrupt:
 
 
 _swi_fork:
+    bl _push_usr_ctx
 
-    mov lr, r0
-    // Load usr_sp into r0 and save context on it.
-    stmfd sp!, {r13}^
-    ldmfd sp!, {r0}
-
-    // Store context
-    stmfd r0!, {r14}^
-    stmfd r0!, {r1-r12, r14}
-    // r1 will be loaded into r0
-    mov r1, #0x0
-    stmfd r0!, {r1}
-
-    mrs r1, spsr
-    stmfd r0!, {r1}
-
-    stmfd sp!, {r0}
-    ldmfd sp!, {r13}^
+    mov r0, #0x0
+    bl _push_r0_usr
     
     bl spawn_thread
-    mov r2, r0
 
-    // Load usr_sp into r0 and restore context from it.
-    stmfd sp!, {r13}^
-    ldmfd sp!, {r0}
-
-    // Restore spsr
-    ldmfd r0!, {r1}
-    msr spsr, r1
-
-    // Restore context
-    ldmfd r0!, {r1} // Pop old r0, but don't use it.
-    // Temporary save r2, which will be later loaded into r0.
-    stmfd sp!, {r2}
-
-    ldmfd r0!, {r1-r12, r14}
-    ldmfd r0!, {r14}^
-
+    // span_thread returns the child's id in r0
     stmfd sp!, {r0}
-    ldmfd sp!, {r13}^
-
-    // Finally, restore r0.
+    bl _pop_usr_ctx
+    // Overwrite r0 with the child id.
     ldmfd sp!, {r0}
 
     movs pc, lr
 
 _swi_exit:
-    b exit_thread
+    // Stop the current thread and switch to the next one in the runqueue.
+    bl exit_thread
+    // Pop the next thread's context.
+    bl _pop_usr_ctx
+    movs pc, lr
+
+
+_reset:
+    bl handle_reset
+    b _Lend
+    
+_undefined_instruction:
+    stmfd sp!, {r0-r4, r12, lr}
+    mov r4, lr
+    sub r4, #4 // Instruction that triggered the exception.
+    mov r0, r4
+    bl handle_undefined_instruction
+    ldmfd sp!, {r0-r4, r12, pc}^
+    b _Lend
 
 _data_abort:
     stmfd sp!, {r0-r3, r12, lr}
