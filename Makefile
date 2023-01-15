@@ -25,6 +25,7 @@ OBJ += driver/aic.o
 OBJ += driver/system_timer.o
 OBJ += driver/mem.o
 OBJ += system/threads.o
+OBJ += lib/sys_calls.o
 #
 # Konfiguration
 #

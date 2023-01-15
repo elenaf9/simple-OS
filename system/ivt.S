@@ -31,8 +31,10 @@ _undefined_instruction:
     b _Lend
 
 _software_interrupt:
+    mov lr, r2
     stmfd sp!, {lr}
-    bl handle_software_interrupt
+    
+    bl spawn_thread
     ldmfd sp!, {pc}^
 
 _data_abort:
