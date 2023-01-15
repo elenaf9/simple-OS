@@ -1,3 +1,4 @@
+#include <threads.h>
 
 #define READ_ID 1
 #define WRITE_ID 2
@@ -18,3 +19,12 @@ void create_thread(int *thread_function, int thread_parameter) {
 void end_thread(int thread_id) { _swi(END_THREAD_ID, thread_id, 0, 0); }
 
 void delay_thread(unsigned int timer) { _swi(DELAY_THREAD_ID, timer, 0, 0); }
+
+int fork(thread_fn _thread_function, int _thread_parameter){
+    asm(
+        "mov r2, lr"
+    );
+    asm(
+        "swi 2"
+    );
+}
