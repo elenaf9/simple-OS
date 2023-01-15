@@ -87,7 +87,7 @@ static void init_tcb(unsigned int index, thread_fn thread_function,
 static void idle_thread(int p) {
   if (p != smoke_test_parameter) {
     // Something went wrong with the parameter.
-    printf("PANIC: wrong parameter!!!\n");
+    printf("PANIC: wrong parameter %x!!!\n", p);
     return;
   }
   while (1) {
@@ -184,7 +184,7 @@ void thread_switch(void) {
     runqueue->prev->next = runqueue;
   }
 
-  _switch_thread(prev_sp, &runqueue->data->sp);
+  *prev_sp = _switch_thread(runqueue->data->sp);
 }
 
 void change_thread_wait() {
