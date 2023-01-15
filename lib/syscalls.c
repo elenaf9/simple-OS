@@ -1,5 +1,3 @@
-#include <threads.h>
-
 #define READ_ID 1
 #define WRITE_ID 2
 #define CREAT_THREAD_ID 3
@@ -23,8 +21,13 @@ void delay_thread(unsigned int timer) { _swi(DELAY_THREAD_ID, timer, 0, 0); }
 int fork(){
     asm(
         "mov r0, lr"
+        
     );
     asm(
-        "swi 2"
+        "swi 1"
     );
+}
+
+int exit(){
+    asm("swi 2");
 }

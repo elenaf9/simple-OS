@@ -7,9 +7,8 @@
 
 void handle_irq(void) {
   if (is_st_interrupt()) {
-    // printf("!");
-    count_delay();
-    thread_switch();
+    printf("!");
+    switch_thread();
   } else if (is_dbgu_rx_ready()) {
     char c = get_char();
     int pid = fork();
@@ -29,29 +28,8 @@ void handle_data_abort(void) { printf("Data abort!\n"); }
 
 void handle_prefetched_abort(void) { printf("Prefetched abort!\n"); }
 
-int handle_software_interrupt(int num, int arg1, int arg2, int arg3) {
-  int ret = 0;
-  switch (num) {
-  case 1:
-    thread_wait();
-    ret = read_char();
-    break;
-  case 2:
-    write((char)arg1);
-    break;
-  case 3:
-    // ret = spawn_thread((thread_fn)arg1, arg2);
-    break;
-  case 4:
-    despawn_thread(arg1);
-    break;
-  case 5:
-    thread_delay(arg1);
-    break;
-  }
 
-  return ret;
-}
+void handle_software_interrupt(void) { printf("Software interrupt!\n"); }
 
 void handle_undefined_instruction(int addr) {
   printf("Undefined instruction triggered at %x!\n", addr);
