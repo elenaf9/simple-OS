@@ -31,11 +31,50 @@ _undefined_instruction:
     b _Lend
 
 _software_interrupt:
-    mov lr, r2
-    stmfd sp!, {lr}
+    mov lr, r0
+    // Load usr_sp into r0 and save context on it.
+    stmfd sp!, {r13}^
+    ldmfd sp!, {r0}
+
+    // Store context
+    stmfd r0!, {r14}^
+    stmfd r0!, {r1-r12, r14}
+    // r1 will be loaded into r0
+    mov r1, #0x0
+    stmfd r0!, {r1}
+
+    mrs r1, spsr
+    stmfd r0!, {r1}
+
+    stmfd sp!, {r0}
+    ldmfd sp!, {r13}^
     
     bl spawn_thread
-    ldmfd sp!, {pc}^
+    mov r2, r0
+
+    // Load usr_sp into r0 and restore context from it.
+    stmfd sp!, {r13}^
+    ldmfd sp!, {r0}
+
+    // Restore spsr
+    ldmfd r0!, {r1}
+    msr spsr, r1
+
+    // Restore context
+    ldmfd r0!, {r1} // Pop old r0, but don't use it.
+    // Temporary save r2, which will be later loaded into r0.
+    stmfd sp!, {r2}
+
+    ldmfd r0!, {r1-r12, r14}
+    ldmfd r0!, {r14}^
+
+    stmfd sp!, {r0}
+    ldmfd sp!, {r13}^
+
+    // Finally, restore r0.
+    ldmfd sp!, {r0}
+
+    movs pc, lr
 
 _data_abort:
     stmfd sp!, {r0-r3, r12, lr}
@@ -56,3 +95,4 @@ _fiq:
 
 _Lend:
 b _Lend
+

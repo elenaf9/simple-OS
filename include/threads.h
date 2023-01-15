@@ -4,7 +4,7 @@
 typedef void (*thread_fn)(int);
 
 void init_threading(void);
-int spawn_thread(thread_fn, int);
+int spawn_thread(unsigned int);
 void thread_switch(void);
 void change_thread_wait();
 

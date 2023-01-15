@@ -12,7 +12,11 @@ void handle_irq(void) {
     thread_switch();
   } else if (is_dbgu_rx_ready()) {
     char c = get_char();
-    if (fork(periodically_print_char, c)) {
+    int pid = fork();
+    if (pid == 0) {
+      periodically_print_char(c);
+      for (;;);
+    } else if (pid < 0) {
       printf("Spawning new thread failed - max number of threads reached.\n");
       return;
     }
@@ -36,7 +40,7 @@ int handle_software_interrupt(int num, int arg1, int arg2, int arg3) {
     write((char)arg1);
     break;
   case 3:
-    ret = spawn_thread((thread_fn)arg1, arg2);
+    // ret = spawn_thread((thread_fn)arg1, arg2);
     break;
   case 4:
     despawn_thread(arg1);
