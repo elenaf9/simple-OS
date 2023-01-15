@@ -18,16 +18,12 @@ void end_thread(int thread_id) { _swi(END_THREAD_ID, thread_id, 0, 0); }
 
 void delay_thread(unsigned int timer) { _swi(DELAY_THREAD_ID, timer, 0, 0); }
 
-int fork(){
-    asm(
-        "mov r0, lr"
-        
-    );
-    asm(
+int fork(void){
+    asm("mov r0, lr;" 
         "swi 1"
     );
 }
 
-int exit(){
+int exit(void) {
     asm("swi 2");
 }

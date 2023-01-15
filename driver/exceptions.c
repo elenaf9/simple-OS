@@ -9,18 +9,22 @@ void handle_irq(void) {
   if (is_st_interrupt()) {
     printf("!");
     switch_thread();
-  } else if (is_dbgu_rx_ready()) {
+  } 
+
+  if (is_dbgu_rx_ready()) {
+
     char c = get_char();
     int pid = fork();
+
     if (pid == 0) {
       periodically_print_char(c);
-      for (;;);
-    } else if (pid < 0) {
+      exit();
+    } 
+    
+    if (pid < 0) {
       printf("Spawning new thread failed - max number of threads reached.\n");
       return;
     }
-  } else {
-    printf("Other Interrupt!\n");
   }
 }
 

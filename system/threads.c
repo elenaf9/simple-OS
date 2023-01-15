@@ -12,6 +12,8 @@
 // i.e. behind the bottom of the first thread's stack
 #define TCBS_BASE THREADS_STACK_BOTTOM
 
+static int const smoke_test_parameter = 42;
+
 enum thread_state { READY, RUNNING, INACTIVE};
 
 struct list_elem {
@@ -39,7 +41,12 @@ static void enqueue_idle_thread(void) {
 }
 
 // Idle thread that runs if no other thread is active.
-static void idle_thread(void) {
+static void idle_thread(int p) {
+  if (p != smoke_test_parameter) {
+    // Something went wrong with the parameter.
+    printf("PANIC: wrong parameter %x!!!\n", p);
+    return;
+  }
   while (1) {}
 }
 
@@ -57,7 +64,7 @@ void init_threading(void) {
   struct tcb *idle_tcb = &tcbs[0];
   // Initialized a stack for this thread so that the correct context is loaded on 
   // thread switch.
-  idle_tcb->sp = _init_idle_thread_stack(THREADS_STACK_BOTTOM, &idle_thread);
+  idle_tcb->sp = _init_idle_thread_stack(THREADS_STACK_BOTTOM, &idle_thread, smoke_test_parameter);
   enqueue_idle_thread();
 }
 
@@ -121,13 +128,13 @@ void exit_thread(void) {
 
   // If this was the only thread remaining enqueue idle thread
   if (self->next == self) {
-      enqueue_idle_thread();
+    enqueue_idle_thread();
   } else {
     runqueue = self->next;
     runqueue->prev = self->prev;
     runqueue->prev->next = runqueue;
   }
-  _switch_usr_stack(runqueue->data->sp);
+  switch_thread();
 }
 
 

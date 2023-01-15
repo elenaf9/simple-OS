@@ -9,5 +9,6 @@ void delay_thread(unsigned int timer);
 int create_thread(int *thread_function, int thread_parameter);
 
 int fork(void);
+int exit(void);
 
 #endif
