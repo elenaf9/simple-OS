@@ -114,7 +114,7 @@ void init_threading(void) {
 
 // Spawn a new thread that executes the `thread_function` with the 
 // `thread_parameter` as function parameter.
-int spawn_thread(thread_fn thread_function, int thread_parameter) {
+int spawn_thread(unsigned int parent_sp) {
 
   // Insert at a free slot in the TCBs array.
   int is_space = 0;
@@ -126,12 +126,38 @@ int spawn_thread(thread_fn thread_function, int thread_parameter) {
     }
   }
   if (!is_space) {
-    return 1;
+    return -1;
   }
+  int child_index = i;
 
-  init_tcb(i, thread_function, thread_parameter);
+  struct tcb *new_tcb = &tcbs[child_index];
 
-  struct tcb *new_tcb = &tcbs[i];
+  new_tcb->id = child_index;
+  new_tcb->state = CREATED;
+  new_tcb->element.data = new_tcb;
+
+  int parent_index = runqueue->data->id;
+  int parent_stack_bottom = THREADS_STACK_BOTTOM - (parent_index*STACK_SIZE);
+  int parent_used_stack_size = parent_stack_bottom - parent_sp;
+  int child_stack_bottom = THREADS_STACK_BOTTOM - (child_index*STACK_SIZE);
+  
+  // printf("child: %x\n", child_index);
+  // printf("sp: %x\n", parent_sp);
+
+  // printf("parent STACK_BOTTOM: %x, sp:%x stack_size: %x\n", parent_stack_bottom, parent_sp, parent_used_stack_size);
+  // printf("child: %x\n", child_index);
+  // printf("sp: %x\n", parent_sp);
+
+  // Copy the stack of the parent thread to the child.
+  new_tcb->sp = child_stack_bottom-parent_used_stack_size;
+
+  unsigned int src_addr = parent_stack_bottom;
+  unsigned int dst_addr = child_stack_bottom;
+  while (dst_addr > new_tcb->sp) {
+      mem_write_u32(dst_addr, mem_read_u32(src_addr));
+      dst_addr -= 4;
+      src_addr -= 4;
+  }
 
   // Insert as next thread except for threads that themselves
   // did not run yet.
@@ -143,13 +169,12 @@ int spawn_thread(thread_fn thread_function, int thread_parameter) {
     }
     insert_after = insert_after->next;
   }
-
   new_tcb->element.prev = insert_after;
   new_tcb->element.next = insert_after->next;
   new_tcb->element.prev->next = &new_tcb->element;
   new_tcb->element.next->prev = &new_tcb->element;
 
-  return 0;
+  return child_index;
 }
 
 // Switch to the next thread in the runqueue if there are more than one threads

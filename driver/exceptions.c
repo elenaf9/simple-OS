@@ -11,7 +11,11 @@ void handle_irq(void) {
     thread_switch();
   } else if (is_dbgu_rx_ready()) {
     char c = get_char();
-    if (fork(periodically_print_char, c)) {
+    int pid = fork();
+    if (pid == 0) {
+      periodically_print_char(c);
+      for (;;);
+    } else if (pid < 0) {
       printf("Spawning new thread failed - max number of threads reached.\n");
       return;
     }

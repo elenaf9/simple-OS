@@ -1,8 +1,8 @@
 #include <threads.h>
 
-int fork(thread_fn _thread_function, int _thread_parameter){
+int fork(){
     asm(
-        "mov r2, lr"
+        "mov r0, lr"
     );
     asm(
         "swi 2"
