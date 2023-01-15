@@ -8,7 +8,7 @@
 void handle_irq(void) {
   if (is_st_interrupt()) {
     printf("!");
-    thread_switch();
+    switch_thread();
   } else if (is_dbgu_rx_ready()) {
     char c = get_char();
     int pid = fork();

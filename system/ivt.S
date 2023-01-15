@@ -31,6 +31,20 @@ _undefined_instruction:
     b _Lend
 
 _software_interrupt:
+    ldr r1, [lr,#-4]
+    bic r1, r1, #0xFF000000
+
+    cmp r1, #1
+    beq _swi_fork
+
+    cmp r1, #2
+    beq _swi_exit
+
+    b handle_software_interrupt
+
+
+_swi_fork:
+
     mov lr, r0
     // Load usr_sp into r0 and save context on it.
     stmfd sp!, {r13}^
@@ -75,6 +89,9 @@ _software_interrupt:
     ldmfd sp!, {r0}
 
     movs pc, lr
+
+_swi_exit:
+    b exit_thread
 
 _data_abort:
     stmfd sp!, {r0-r3, r12, lr}

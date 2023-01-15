@@ -12,7 +12,7 @@
 // i.e. behind the bottom of the first thread's stack
 #define TCBS_BASE THREADS_STACK_BOTTOM
 
-enum thread_state { CREATED, ACTIVE, FINISHED, FREE };
+enum thread_state { READY, RUNNING, INACTIVE};
 
 struct list_elem {
   struct list_elem *prev;
@@ -28,99 +28,62 @@ struct tcb {
 };
 
 static struct tcb *const tcbs = (struct tcb *)TCBS_BASE;
-
 struct list_elem *runqueue;
 
-static int const smoke_test_parameter = 42;
-
-// Type of the functions that are executed in a thread.
-typedef void (*thread_fn)(int);
-
-
-static void run_thread(thread_fn thread_function, int thread_parameter) {
-
-  runqueue->data->state = ACTIVE;
-
-  // Run thread.
-  thread_function(thread_parameter);
-
-  runqueue->data->state = FINISHED;
-
-  // If this was the only thread remaining enqueue idle thread
-  if (runqueue->next == runqueue) {
-    tcbs[0].element.prev = runqueue;
-    tcbs[0].element.next = runqueue;
-    runqueue->next = &tcbs[0].element;
-    runqueue->prev = &tcbs[0].element;
-  }
-
-  for (;;)
-    ;
-}
-
-// Initialize the TCB at `index` in the TCB list so it runs the `thread_function`
-// with the `thread_parameter` once the thread is next in the runqueue.
-//
-// Note: tcb.list_elem.{prev,next} are not set and need to be configured depending
-// on where the thread is inserted in the runqueue.
-static void init_tcb(unsigned int index, thread_fn thread_function,
-                     int thread_parameter) {
-
-  struct tcb *new_tcb = &tcbs[index];
-  int stack_bottom = (THREADS_STACK_BOTTOM - index*STACK_SIZE);
-  // Initialized a stack for this thread so that the correct context is loaded on 
-  // thread switch.
-  new_tcb->sp = _init_thread_stack(stack_bottom, &run_thread, thread_function, thread_parameter);
-  new_tcb->id = index;
-  new_tcb->state = CREATED;
-  new_tcb->element.data = new_tcb;
-
-  return;
+static void enqueue_idle_thread(void) {
+  struct tcb *idle_tcb = &tcbs[0];
+  idle_tcb->state = READY;
+  idle_tcb->element.next = &idle_tcb->element;
+  idle_tcb->element.prev = &idle_tcb->element;
+  runqueue = &idle_tcb->element;
 }
 
 // Idle thread that runs if no other thread is active.
-//
-// Started with a dummy parameter to smoke-test that spawning
-// threads with a parameter properly works.
-static void idle_thread(int p) {
-  if (p != smoke_test_parameter) {
-    // Something went wrong with the parameter.
-    printf("PANIC: wrong parameter %x!!!\n", p);
-    return;
-  }
+static void idle_thread(void) {
   while (1) {}
 }
 
 // Initiate threading and insert an idle thread that
 // runs when no other thread is active.
 void init_threading(void) {
-
-  // Init idle thread
-  init_tcb(0, &idle_thread, smoke_test_parameter);
-
-  struct tcb *new_tcb = &tcbs[0];
-  new_tcb->element.next = &new_tcb->element;
-  new_tcb->element.prev = &new_tcb->element;
-  new_tcb->state = CREATED;
-  runqueue = &new_tcb->element;
-
   // Init state of empty tcbs
   int i;
-  for (i = 1; i < NUM_THREADS + 1; i++) {
-    tcbs[i].state = FREE;
+  for (i = 0; i < NUM_THREADS + 1; i++) {
+    tcbs[i].state = INACTIVE;
     tcbs[i].id = i;
+    tcbs[i].element.data = &tcbs[i];
+  }
+
+  struct tcb *idle_tcb = &tcbs[0];
+  // Initialized a stack for this thread so that the correct context is loaded on 
+  // thread switch.
+  idle_tcb->sp = _init_idle_thread_stack(THREADS_STACK_BOTTOM, &idle_thread);
+  enqueue_idle_thread();
+}
+
+static void copy_thread_stack(struct tcb *parent, struct tcb *child) {
+  int child_stack_bottom = THREADS_STACK_BOTTOM - (child->id*STACK_SIZE);
+  int parent_stack_bottom = THREADS_STACK_BOTTOM - (parent->id*STACK_SIZE);
+  int parent_used_stack_size = parent_stack_bottom - parent->sp;
+
+  // Copy the stack of the parent thread to the child.
+  child->sp = child_stack_bottom-parent_used_stack_size;
+
+  unsigned int src_addr = parent_stack_bottom;
+  unsigned int dst_addr = child_stack_bottom;
+  while (dst_addr > child->sp) {
+      mem_write_u32(dst_addr, mem_read_u32(src_addr));
+      dst_addr -= 4;
+      src_addr -= 4;
   }
 }
 
-// Spawn a new thread that executes the `thread_function` with the 
-// `thread_parameter` as function parameter.
 int spawn_thread(unsigned int parent_sp) {
-
   // Insert at a free slot in the TCBs array.
   int is_space = 0;
   int i;
   for (i = 1; i < NUM_THREADS + 1; i++) {
-    if (tcbs[i].state == FREE) {
+    if (tcbs[i].state == INACTIVE) {
       is_space = 1;
       break;
     }
@@ -128,77 +91,59 @@ int spawn_thread(unsigned int parent_sp) {
   if (!is_space) {
     return -1;
   }
-  int child_index = i;
 
-  struct tcb *new_tcb = &tcbs[child_index];
+  struct tcb *child = &tcbs[i];
+  child->state = READY;
+  struct tcb *parent = runqueue->data;
+  parent->sp = parent_sp;
+  copy_thread_stack(parent, child);
 
-  new_tcb->id = child_index;
-  new_tcb->state = CREATED;
-  new_tcb->element.data = new_tcb;
-
-  int parent_index = runqueue->data->id;
-  int parent_stack_bottom = THREADS_STACK_BOTTOM - (parent_index*STACK_SIZE);
-  int parent_used_stack_size = parent_stack_bottom - parent_sp;
-  int child_stack_bottom = THREADS_STACK_BOTTOM - (child_index*STACK_SIZE);
-  
-  // printf("child: %x\n", child_index);
-  // printf("sp: %x\n", parent_sp);
-
-  // printf("parent STACK_BOTTOM: %x, sp:%x stack_size: %x\n", parent_stack_bottom, parent_sp, parent_used_stack_size);
-  // printf("child: %x\n", child_index);
-  // printf("sp: %x\n", parent_sp);
-
-  // Copy the stack of the parent thread to the child.
-  new_tcb->sp = child_stack_bottom-parent_used_stack_size;
-
-  unsigned int src_addr = parent_stack_bottom;
-  unsigned int dst_addr = child_stack_bottom;
-  while (dst_addr > new_tcb->sp) {
-      mem_write_u32(dst_addr, mem_read_u32(src_addr));
-      dst_addr -= 4;
-      src_addr -= 4;
+  if (runqueue->data->id == 0) {
+    // Only idle thread was running - replace in runqueue.
+    child->element.next = &child->element;
+    child->element.prev = &child->element;
+    runqueue = &child->element;
+  } else {
+    // Insert as next thread.
+    child->element.prev = runqueue;
+    child->element.next = runqueue->next;
+    runqueue->next->prev = &child->element;
+    runqueue->next = &child->element;
   }
 
-  // Insert as next thread except for threads that themselves
-  // did not run yet.
-  struct list_elem *insert_after = runqueue;
-  while(insert_after->next != runqueue) {
-    if (insert_after->data->state != CREATED) {
-      // Position to be inserted.
-      break;
-    }
-    insert_after = insert_after->next;
-  }
-  new_tcb->element.prev = insert_after;
-  new_tcb->element.next = insert_after->next;
-  new_tcb->element.prev->next = &new_tcb->element;
-  new_tcb->element.next->prev = &new_tcb->element;
-
-  return child_index;
+  return i;
 }
+
+
+void exit_thread(void) {
+  struct list_elem *self = runqueue;
+  self->data->state = INACTIVE;
+
+  // If this was the only thread remaining enqueue idle thread
+  if (self->next == self) {
+      enqueue_idle_thread();
+  } else {
+    runqueue = self->next;
+    runqueue->prev = self->prev;
+    runqueue->prev->next = runqueue;
+  }
+  _switch_usr_stack(runqueue->data->sp);
+}
+
 
 // Switch to the next thread in the runqueue if there are more than one threads
 // active.
-void thread_switch(void) {
-  if (runqueue->next == runqueue && runqueue->data->state == ACTIVE) {
-    // Only idle thread active -  no thread switch needed.
+void switch_thread(void) {
+  if (runqueue->next == runqueue && runqueue->data->state == RUNNING) {
+    // Only single thread active -  no thread switch needed.
     return;
   }
 
-  unsigned int *prev_sp = &runqueue->data->sp;
   runqueue = runqueue->next;
+  runqueue->prev->data->state = READY;
+  runqueue->data->state = RUNNING;
+
   printf("\n");
 
-  // If previous thread finished mark as free.
-  if (runqueue->prev->data->state == FINISHED) {
-    runqueue->prev->data->state = FREE;
-  }
-
-  // If prev thread was idle thread or is free (=finished), remove from queue. 
-  if (runqueue->prev->data->id == 0 || runqueue->prev->data->state == FREE) {
-    runqueue->prev = runqueue->prev->prev;
-    runqueue->prev->next = runqueue;
-  }
-
-  *prev_sp = _switch_thread(runqueue->data->sp);
+  runqueue->prev->data->sp = _switch_usr_stack(runqueue->data->sp);
 }

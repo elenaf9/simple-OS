@@ -1,10 +1,13 @@
-#include <threads.h>
-
 int fork(){
     asm(
         "mov r0, lr"
+        
     );
     asm(
-        "swi 2"
+        "swi 1"
     );
+}
+
+int exit(){
+    asm("swi 2");
 }
