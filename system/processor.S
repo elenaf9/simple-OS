@@ -47,16 +47,14 @@ _cpu_enable_interrupt:
 
     bx lr
 
-.global _init_thread_stack
+.global _init_idle_thread_stack
 // Initializes a stack for a thread so that the correct context is loaded in 
-// _switch_thread.
+// _switch_usr_stack.
 // 
 // @r0: stack bottom for this thread
-// @r1: pointer to `run_thread` helper function
-// @r2: 1st parameter for run_thread: the thread's actual function
-// @r3: 2nd parameter for run_thread: parameter for the thread's function
+// @r1: pointer to the thread's function
 // returns stack pointer
-_init_thread_stack:
+_init_idle_thread_stack:
 
     stmfd sp!, {r4, lr}
     mov r4, sp
@@ -88,13 +86,13 @@ _init_thread_stack:
     ldmfd sp!, {r4, pc}
 
 
-.global _switch_thread
+.global _switch_usr_stack
 // Switch context for threads.
 //
 // @r0 the usr_sp of the next thread
 //
 // returns the usr_sp of the previous thread
-_switch_thread:
+_switch_usr_stack:
 
     stmfd sp!, {r13}^
     ldmfd sp!, {r1}
