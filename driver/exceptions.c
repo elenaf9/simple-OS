@@ -3,6 +3,7 @@
 #include "print.h"
 #include "system_timer.h"
 #include "threads.h"
+#include "syscalls.h"
 
 void handle_irq(void) {
   if (is_st_interrupt()) {
@@ -11,12 +12,9 @@ void handle_irq(void) {
     thread_switch();
   } else if (is_dbgu_rx_ready()) {
     char c = get_char();
-    // check_wait();
-
-    if (c >= 'A') {
-      spawn_thread(periodically_print_char, c);
-    } else {
-      create_thread(periodically_print_passiv, c);
+    if (fork(periodically_print_char, c)) {
+      printf("Spawning new thread failed - max number of threads reached.\n");
+      return;
     }
   } else {
     printf("Other Interrupt!\n");

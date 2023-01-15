@@ -31,10 +31,11 @@ _undefined_instruction:
     b _Lend
 
 _software_interrupt:
-    stmfd sp!, {r0-r4, r12, lr}
-    bl handle_software_interrupt
-    ldmfd sp!, {r0-r4, r12, pc}^
-    b _Lend
+    mov lr, r2
+    stmfd sp!, {lr}
+    
+    bl spawn_thread
+    ldmfd sp!, {pc}^
 
 _data_abort:
     stmfd sp!, {r0-r3, r12, lr}
