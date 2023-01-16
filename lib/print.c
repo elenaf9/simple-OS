@@ -11,11 +11,11 @@ static void print_as_hex(unsigned int val) {
 
   int i = 0;
 
-  write_char('0');
-  write_char('x');
+  write('0');
+  write('x');
 
   if (val == 0) {
-    write_char('0');
+    write('0');
     return;
   }
   while (val > 0) {
@@ -31,7 +31,7 @@ static void print_as_hex(unsigned int val) {
   }
 
   while (i >= 0) {
-    write_char(hex[i]);
+    write(hex[i]);
     i--;
   }
   return;
@@ -60,12 +60,12 @@ __attribute__((format(printf, 1, 2))) int printf(char *fmt, ...) {
       switch (curr) {
       case 'c':
         c = (char)va_arg(ap, int);
-        write_char(c);
+        write(c);
         break;
       case 's':
         s = va_arg(ap, char *);
         while (*s) {
-          write_char(*s++);
+          write(*s++);
         }
         break;
       case 'p':
@@ -81,7 +81,7 @@ __attribute__((format(printf, 1, 2))) int printf(char *fmt, ...) {
         goto finish;
       }
     } else if (!(curr == '%')) {
-      write_char(curr);
+      write(curr);
     }
     prev = curr;
   }

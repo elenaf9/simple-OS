@@ -71,6 +71,4 @@ void init_st(void) {
 
   // init rt timer to increment its counter every ~1ms
   mem_write_u32(ST_ADDR + ST_RTMR, (ST_INTERVAL / 500));
-
-  printf("st enabled\n");
 }
