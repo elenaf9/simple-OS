@@ -1,17 +1,17 @@
 
-#include <mem.h>
-#include <processor.h>
-#include <print.h>
 #include <irq.h>
+#include <mem.h>
+#include <print.h>
+#include <processor.h>
 
 #define AIC_BASE_ADDR 0xFFFFF000
-#define AIC_SMR1 0X04 // Source Mode Register 1 
-#define AIC_SVR1 0X84 // Source Vector Register 1 
+#define AIC_SMR1 0X04  // Source Mode Register 1
+#define AIC_SVR1 0X84  // Source Vector Register 1
 #define AIC_IVR1 0x100 // Interrupt Vector Register
 #define AIC_OFFSET_INTERRUPT_MASK_REG 0x110
 
 #define AIC_IECR 0x120 // Interrupt Enable Command Register
-#define SYS (1 << 1) // Interrupt Source 1
+#define SYS (1 << 1)   // Interrupt Source 1
 
 #define AIC_EOICR 0x130 // End of Interrupt Command Register
 
@@ -31,6 +31,4 @@ void init_aic(void) {
   printf("aic enabled\n");
 }
 
-void end_of_interrupt(void) {
-  mem_write_u32(AIC_BASE_ADDR + AIC_EOICR, 1);
-}
+void end_of_interrupt(void) { mem_write_u32(AIC_BASE_ADDR + AIC_EOICR, 1); }

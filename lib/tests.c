@@ -1,4 +1,5 @@
 #include <print.h>
+#include <syscalls.h>
 
 // Trigger data abort exception.
 void trigger_abort(void) {
@@ -18,3 +19,11 @@ void trigger_software_interrupt(void) {
   asm("swi 2");
 }
 
+void read_test() {
+  while (1) {
+    char c = 'd'; // read();
+
+    printf("%c\n", c);
+    delay_thread(32000);
+  }
+}

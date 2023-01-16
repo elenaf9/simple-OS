@@ -31,14 +31,15 @@ _undefined_instruction:
     b _Lend
 
 _software_interrupt:
-    stmfd sp!, {lr}
+    stmfd sp!, {r0-r3, r12, lr}
     bl handle_software_interrupt
-    ldmfd sp!, {pc}^
+    ldmfd sp!, {r0-r3, r12, pc}^
+    b _Lend
 
 _data_abort:
     stmfd sp!, {r0-r3, r12, lr}
     bl handle_data_abort
-    // ldmfd sp!, {r0-r3, r12, pc}^
+    ldmfd sp!, {r0-r3, r12, pc}^
     b _Lend
 
 _prefetched_abort:
