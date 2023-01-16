@@ -3,7 +3,6 @@
 
 __attribute__((format(printf, 1, 2))) int printf(char *fmt, ...);
 
-void periodically_print_char(int);
-void periodically_print_passiv(int);
+void periodically_print_char(char c);
 
 #endif
