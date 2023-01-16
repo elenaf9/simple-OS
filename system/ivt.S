@@ -28,18 +28,30 @@ _software_interrupt:
     cmp r1, #2
     beq _swi_exit
 
-    b handle_software_interrupt
+    cmp r1, #3
+    beq _swi_sleep
 
+    cmp r1, #4
+    beq _swi_read
+
+    cmp r1, #5
+    beq _swi_write
 
 _swi_fork:
+    // R0 was already set to the LR in the `fork` sys_call
     bl _push_usr_ctx
-
+    // r0 is the thread PID.
+    // For the child we set it to 0 here,
+    // which will be popped into r0 when the context is
+    // restored in the irq after the thread switch.
+    // For the parent we overwrite it with the child's id
+    // after the `spawn_thread` call below.
     mov r0, #0x0
     bl _push_r0_usr
-    
+
     bl spawn_thread
 
-    // span_thread returns the child's id in r0
+    // spawn_thread returns the child's id in r0
     stmfd sp!, {r0}
     bl _pop_usr_ctx
     // Overwrite r0 with the child id.
@@ -48,12 +60,45 @@ _swi_fork:
     movs pc, lr
 
 _swi_exit:
-    // Stop the current thread and switch to the next one in the runqueue.
+    // Don't store current context, but restore new context after the 
+    // `exit_thread` call since the thread is switched there.
     bl exit_thread
-    // Pop the next thread's context.
     bl _pop_usr_ctx
     movs pc, lr
 
+_swi_sleep:
+    // r0 are the ms that the thread should sleep.
+    stmfd sp!, {r0}
+
+    mov r0, lr
+    bl _push_usr_ctx
+
+    eor r0, r0 
+    bl _push_r0_usr
+
+    ldmfd sp!, {r0}
+
+    bl thread_sleep
+
+    bl _pop_usr_ctx;
+    movs pc, lr
+
+_swi_read:
+    mov r0, lr
+    bl _push_usr_ctx
+
+    eor r0, r0
+    bl _push_r0_usr
+
+    bl thread_wait_char
+
+    bl _pop_usr_ctx;
+    movs pc, lr
+
+_swi_write:
+    stmfd sp!, {lr}
+    bl write_char
+    ldmfd sp!, {pc}^
 
 _reset:
     bl handle_reset

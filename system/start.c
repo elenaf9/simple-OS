@@ -6,6 +6,7 @@
 #include <system_timer.h>
 #include <tests.h>
 #include <threads.h>
+#include <processor.h>
 
 // Test function that echoes received chars via the debug unit.
 int main(void) {
@@ -16,11 +17,18 @@ int main(void) {
 
   init_threading();
 
-  char c = read_char();
-  printf("%c", c);
+  _switch_cpu_mode(0b10000);
 
-  for (;;)
-    ;
 
-  reset();
+  if (fork() == 0)  {
+    while (1) {
+      char c = read();
+      if (fork() == 0) {
+        periodically_print_char(c);
+      }
+    }
+  }
+  for (;;);
+
+  return 0;
 }

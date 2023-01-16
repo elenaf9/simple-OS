@@ -1,4 +1,5 @@
 #include <mem.h>
+#include <print.h>
 
 #define DBGU 0xfffff200 // Debug Unit
 
@@ -59,13 +60,4 @@ char get_char(void) {
   // Read value
   char val = mem_read_u32(DBGU + DBGU_RHR);
   return val;
-}
-
-// Read a single char from the receiver.
-char read_char(void) {
-  // Wait until we received something
-  while (!is_dbgu_rx_ready()) {
-  }
-
-  return get_char();
 }

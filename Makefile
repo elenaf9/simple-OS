@@ -26,7 +26,6 @@ OBJ += driver/system_timer.o
 OBJ += driver/mem.o
 OBJ += system/threads.o
 OBJ += lib/syscalls.o
-OBJ += system/swi.o
 
 #
 # Konfiguration
