@@ -16,6 +16,8 @@ int main(void) {
 
   init_threading();
 
+  read_test();
+
   for (;;)
     ;
 

@@ -221,3 +221,17 @@ void count_delay() {
     tmp = tmp->next;
   }
 }
+
+void thread_wait() { runqueue->data->state = WAITING; }
+
+void check_wait() {
+  struct list_elem *tmp;
+  tmp = runqueue->next;
+
+  while (tmp != runqueue) {
+    if (tmp->data->state == WAITING) {
+      tmp->data->state = ACTIVE;
+    }
+    tmp = tmp->next;
+  }
+}

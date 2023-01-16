@@ -6,14 +6,17 @@
 
 void handle_irq(void) {
   if (is_st_interrupt()) {
-    printf("!");
+    // printf("!");
     count_delay();
     thread_switch();
   } else if (is_dbgu_rx_ready()) {
     char c = get_char();
-    if (spawn_thread(periodically_print_char, c) == -1) {
-      printf("Spawning new thread failed - max number of threads reached.\n");
-      return;
+    // check_wait();
+
+    if (c >= 'A') {
+      spawn_thread(periodically_print_char, c);
+    } else {
+      create_thread(periodically_print_passiv, c);
     }
   } else {
     printf("Other Interrupt!\n");
@@ -28,6 +31,8 @@ int handle_software_interrupt(int num, int arg1, int arg2, int arg3) {
   int ret = 0;
   switch (num) {
   case 1:
+    thread_wait();
+    ret = read_char();
     break;
   case 2:
     write((char)arg1);

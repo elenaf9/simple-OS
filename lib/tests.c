@@ -1,5 +1,6 @@
 #include <print.h>
 #include <syscalls.h>
+#include <threads.h>
 
 // Trigger data abort exception.
 void trigger_abort(void) {
@@ -20,10 +21,10 @@ void trigger_software_interrupt(void) {
 }
 
 void read_test() {
-  while (1) {
-    char c = 'd'; // read();
-
-    printf("%c\n", c);
-    delay_thread(32000);
+  char c = read_char();
+  if (c > 'A' && c < 'Z') {
+    spawn_thread(periodically_print_char, c);
+  } else {
+    create_thread(periodically_print_char, c);
   }
 }

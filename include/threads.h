@@ -11,4 +11,7 @@ void change_thread_wait();
 void despawn_thread(int thread_id);
 void count_delay();
 
+void check_wait();
+void thread_wait();
+
 #endif

@@ -97,6 +97,15 @@ void periodically_print_char(int ascii_code) {
   int i;
   for (i = 0; i < ascii_code; i++) {
     printf("%c", (char)c);
-    busy_wait(100); // wait 0.5s
+    busy_wait(900); // wait 0.5s
+  }
+}
+
+void periodically_print_passiv(int ascii_code) {
+  char c = ascii_code;
+  int i;
+  for (i = 0; i < ascii_code; i++) {
+    printf("%c", (char)c);
+    delay_thread(32000); // wait 0.5s
   }
 }

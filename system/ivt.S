@@ -31,9 +31,9 @@ _undefined_instruction:
     b _Lend
 
 _software_interrupt:
-    stmfd sp!, {r0-r3, r12, lr}
+    stmfd sp!, {r0-r4, r12, lr}
     bl handle_software_interrupt
-    ldmfd sp!, {r0-r3, r12, pc}^
+    ldmfd sp!, {r0-r4, r12, pc}^
     b _Lend
 
 _data_abort:
