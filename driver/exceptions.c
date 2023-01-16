@@ -6,25 +6,20 @@
 #include "sys_calls.h"
 
 void handle_irq(void) {
-  if (is_st_interrupt()) {
-    printf("!");
-    switch_thread();
-  } 
+  switch (is_st_interrupt()) {
+    case PERIOD_TIMER:
+      switch_thread();
+      break;
+    case ALARM:
+      on_st_alarm();
+      break;
+    default:
+      break;
+  }
 
   if (is_dbgu_rx_ready()) {
-
     char c = get_char();
-    int pid = fork();
-
-    if (pid == 0) {
-      periodically_print_char(c);
-      exit();
-    } 
-    
-    if (pid < 0) {
-      printf("Spawning new thread failed - max number of threads reached.\n");
-      return;
-    }
+    on_dbgu_rx(c);
   }
 }
 

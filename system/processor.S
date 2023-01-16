@@ -162,7 +162,7 @@ _pop_usr_ctx:
     ldmfd sp!, {pc}
 
 
-// @r0: The LR register that should be stored
+// @r0: The r0 register that should be stored
 .global _push_r0_usr
 _push_r0_usr:
     mov r1, r0

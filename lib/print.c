@@ -2,6 +2,7 @@
 #include <dbgu.h>
 #include <stddef.h>
 #include <system_timer.h>
+#include <sys_calls.h>
 
 // Print integer as hexadecimal
 static void print_as_hex(unsigned int val) {
@@ -91,11 +92,14 @@ finish:
 
 // Print char for an ascii-code *n* times with a short delay, 
 // with *n* being the ascii code.
-void periodically_print_char(int ascii_code) {
-  char c = ascii_code;
+void periodically_print_char(char c) {
   int i;
-  for (i = 0; i < ascii_code; i++) {
-    printf("%c", (char)c);
-    busy_wait(100); // wait 0.5s
+  for (i = 0; i < (int) c; i++) {
+    printf("%c", c);
+    if (c >= 'a') {
+      sleep(100); // wait 0.5s
+    } else {
+      busy_wait(100);
+    }
   }
 }
