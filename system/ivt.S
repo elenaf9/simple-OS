@@ -96,9 +96,9 @@ _swi_read:
     movs pc, lr
 
 _swi_write:
-    stmfd sp!, {lr}
+    stmfd sp!, {r0-r12, lr}
     bl write_char
-    ldmfd sp!, {pc}^
+    ldmfd sp!, {r0-r12, pc}^
 
 _reset:
     bl handle_reset
