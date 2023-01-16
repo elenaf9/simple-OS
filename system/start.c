@@ -16,7 +16,10 @@ int main(void) {
 
   init_threading();
 
-  read_test();
+  // read_test();
+
+  char c = read_char();
+  printf("%c", c);
 
   for (;;)
     ;
