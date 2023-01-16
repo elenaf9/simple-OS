@@ -27,8 +27,6 @@ void init_aic(void) {
 
   // Enable interrupt in current processor mode
   _cpu_enable_interrupt();
-
-  printf("aic enabled\n");
 }
 
 void end_of_interrupt(void) {
