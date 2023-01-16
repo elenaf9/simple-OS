@@ -6,13 +6,13 @@
 
 #define NUM_THREADS 16
 #define STACK_SIZE 0x1000 // 4kB
-#define THREADS_STACK_BOTTOM 0x23000000 
+#define THREADS_STACK_BOTTOM 0x23000000
 
 // Since the stack grows towards 0 we can place the TCBS at the same address,
 // i.e. behind the bottom of the first thread's stack
 #define TCBS_BASE THREADS_STACK_BOTTOM
 
-enum thread_state { CREATED, ACTIVE, FINISHED, FREE };
+enum thread_state { CREATED, ACTIVE, FINISHED, FREE, WAITING, SLEEPING };
 
 struct list_elem {
   struct list_elem *prev;
@@ -25,6 +25,7 @@ struct tcb {
   unsigned int sp;
   enum thread_state state;
   struct list_elem element;
+  unsigned int delay;
 };
 
 static struct tcb *const tcbs = (struct tcb *)TCBS_BASE;
@@ -35,7 +36,6 @@ static int const smoke_test_parameter = 42;
 
 // Type of the functions that are executed in a thread.
 typedef void (*thread_fn)(int);
-
 
 static void run_thread(thread_fn thread_function, int thread_parameter) {
 
@@ -58,19 +58,21 @@ static void run_thread(thread_fn thread_function, int thread_parameter) {
     ;
 }
 
-// Initialize the TCB at `index` in the TCB list so it runs the `thread_function`
-// with the `thread_parameter` once the thread is next in the runqueue.
+// Initialize the TCB at `index` in the TCB list so it runs the
+// `thread_function` with the `thread_parameter` once the thread is next in the
+// runqueue.
 //
-// Note: tcb.list_elem.{prev,next} are not set and need to be configured depending
-// on where the thread is inserted in the runqueue.
+// Note: tcb.list_elem.{prev,next} are not set and need to be configured
+// depending on where the thread is inserted in the runqueue.
 static void init_tcb(unsigned int index, thread_fn thread_function,
                      int thread_parameter) {
 
   struct tcb *new_tcb = &tcbs[index];
-  int stack_bottom = (THREADS_STACK_BOTTOM - index*STACK_SIZE);
-  // Initialized a stack for this thread so that the correct context is loaded on 
-  // thread switch.
-  new_tcb->sp = _init_thread_stack(stack_bottom, &run_thread, thread_function, thread_parameter);
+  int stack_bottom = (THREADS_STACK_BOTTOM - index * STACK_SIZE);
+  // Initialized a stack for this thread so that the correct context is loaded
+  // on thread switch.
+  new_tcb->sp = _init_thread_stack(stack_bottom, &run_thread, thread_function,
+                                   thread_parameter);
   new_tcb->id = index;
   new_tcb->state = CREATED;
   new_tcb->element.data = new_tcb;
@@ -88,7 +90,8 @@ static void idle_thread(int p) {
     printf("PANIC: wrong parameter!!!\n");
     return;
   }
-  while (1) {}
+  while (1) {
+  }
 }
 
 // Initiate threading and insert an idle thread that
@@ -112,7 +115,7 @@ void init_threading(void) {
   }
 }
 
-// Spawn a new thread that executes the `thread_function` with the 
+// Spawn a new thread that executes the `thread_function` with the
 // `thread_parameter` as function parameter.
 int spawn_thread(thread_fn thread_function, int thread_parameter) {
 
@@ -126,7 +129,7 @@ int spawn_thread(thread_fn thread_function, int thread_parameter) {
     }
   }
   if (!is_space) {
-    return 1;
+    return -1;
   }
 
   init_tcb(i, thread_function, thread_parameter);
@@ -136,7 +139,7 @@ int spawn_thread(thread_fn thread_function, int thread_parameter) {
   // Insert as next thread except for threads that themselves
   // did not run yet.
   struct list_elem *insert_after = runqueue;
-  while(insert_after->next != runqueue) {
+  while (insert_after->next != runqueue) {
     if (insert_after->data->state != CREATED) {
       // Position to be inserted.
       break;
@@ -149,12 +152,13 @@ int spawn_thread(thread_fn thread_function, int thread_parameter) {
   new_tcb->element.prev->next = &new_tcb->element;
   new_tcb->element.next->prev = &new_tcb->element;
 
-  return 0;
+  return new_tcb->id;
 }
 
 // Switch to the next thread in the runqueue if there are more than one threads
 // active.
 void thread_switch(void) {
+
   if (runqueue->next == runqueue && runqueue->data->state == ACTIVE) {
     // Only idle thread active -  no thread switch needed.
     return;
@@ -164,16 +168,56 @@ void thread_switch(void) {
   runqueue = runqueue->next;
   printf("\n");
 
+  // If current thread is Finished
+  if (runqueue->data->state == FINISHED) {
+    runqueue = runqueue->next;
+  }
+
   // If previous thread finished mark as free.
   if (runqueue->prev->data->state == FINISHED) {
     runqueue->prev->data->state = FREE;
   }
 
-  // If prev thread was idle thread or is free (=finished), remove from queue. 
+  // If prev thread was idle thread or is free (=finished), remove from queue.
   if (runqueue->prev->data->id == 0 || runqueue->prev->data->state == FREE) {
     runqueue->prev = runqueue->prev->prev;
     runqueue->prev->next = runqueue;
   }
 
   _switch_thread(prev_sp, &runqueue->data->sp);
+}
+
+void change_thread_wait() {
+  runqueue->data->state = WAITING;
+
+  thread_switch();
+}
+
+void despawn_thread(int thread_id) {
+  struct list_elem *tmp;
+  tmp = runqueue;
+
+  while (tmp->data->id != thread_id) {
+    tmp = tmp->next;
+  }
+
+  tmp->data->state = FINISHED;
+}
+
+void thread_delay(unsigned int timer) {
+  runqueue->data->state = SLEEPING;
+  unsigned int delay = timer / 4000;
+  runqueue->data->delay = delay;
+}
+
+void count_delay() {
+  struct list_elem *tmp;
+  tmp = runqueue->next;
+
+  while (tmp != runqueue) {
+    if (tmp->data->state == SLEEPING) {
+      tmp->data->delay -= 1;
+    }
+    tmp = tmp->next;
+  }
 }

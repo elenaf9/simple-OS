@@ -25,6 +25,9 @@ OBJ += driver/aic.o
 OBJ += driver/system_timer.o
 OBJ += driver/mem.o
 OBJ += system/threads.o
+OBJ += lib/syscalls.o
+OBJ += system/swi.o
+
 #
 # Konfiguration
 #
@@ -37,7 +40,7 @@ CFLAGS = -Wall -Wextra -ffreestanding -mcpu=arm920t -O2
 CPPFLAGS = -Iinclude
 
 #Flags zum Debuggen
-#CFLAGS += -g -Og
+CFLAGS += -g -Og
 
 #LIBGCC := $(shell $(CC) -print-libgcc-file-name)
 

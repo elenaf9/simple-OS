@@ -1,6 +1,7 @@
-#include <stdarg.h>
 #include <dbgu.h>
+#include <stdarg.h>
 #include <stddef.h>
+#include <syscalls.h>
 #include <system_timer.h>
 
 // Print integer as hexadecimal
@@ -52,7 +53,7 @@ __attribute__((format(printf, 1, 2))) int printf(char *fmt, ...) {
   size_t *p;
 
   va_start(ap, fmt);
-  
+
   while (*fmt) {
     char curr = *fmt++;
     if (prev == '%') {
@@ -89,7 +90,7 @@ finish:
   return ret;
 }
 
-// Print char for an ascii-code *n* times with a short delay, 
+// Print char for an ascii-code *n* times with a short delay,
 // with *n* being the ascii code.
 void periodically_print_char(int ascii_code) {
   char c = ascii_code;

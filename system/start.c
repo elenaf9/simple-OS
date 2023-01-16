@@ -2,6 +2,7 @@
 #include <dbgu.h>
 #include <mem.h>
 #include <print.h>
+#include <syscalls.h>
 #include <system_timer.h>
 #include <tests.h>
 #include <threads.h>
