@@ -25,6 +25,7 @@ int main(void) {
       char c = read();
       if (fork() == 0) {
         periodically_print_char(c);
+        exit();
       }
     }
   }

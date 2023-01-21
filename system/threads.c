@@ -87,12 +87,12 @@ void init_threading(void) {
   enqueue_single_thread(&idle_tcb->element);
 }
 
+// Copy the stack of the parent thread to the child.
 static unsigned int copy_thread_stack(unsigned int child_stack_bottom, unsigned int parent_stack_bottom, unsigned int parent_sp) {
   int parent_used_stack_size = parent_stack_bottom - parent_sp;
 
-  // Copy the stack of the parent thread to the child.
   unsigned int child_sp = child_stack_bottom-parent_used_stack_size;
-
+  
   unsigned int src_addr = parent_stack_bottom;
   unsigned int dst_addr = child_stack_bottom;
   while (dst_addr > child_sp) {
@@ -109,10 +109,24 @@ static unsigned int copy_thread_stack(unsigned int child_stack_bottom, unsigned 
 // active.
 void switch_thread(void) {
 
-  // printf("rq: %x, rq->next %x, rq->next->next %x", runqueue->data->id, runqueue->next->data->id, runqueue->next->next->data->id);
-
   struct list_elem *prev = runqueue;
+
+  // Remove exited thread.
+  if (prev->data->state == INACTIVE) {
+    if (prev->next == prev) {
+      // Enqueue idle thread since this was the only thread remaining. 
+      enqueue_single_thread(&tcbs[0].element);
+    } else {
+      // Remove self from runqueue.
+      runqueue = prev->prev;
+      runqueue->next = prev->next;
+      runqueue->next->prev = runqueue;
+    }
+  }
+
   struct list_elem *next = runqueue->next;
+
+  // Iterate through runqueue to find next non-waiting thread.
   while (next->data->state == WAITING && next != runqueue) {
     next = next->next;
   }
@@ -136,7 +150,11 @@ void switch_thread(void) {
 
   runqueue->data->state = RUNNING;
 
-  prev->data->sp = _switch_usr_stack(runqueue->data->sp);
+  unsigned int prev_sp = _switch_usr_stack(runqueue->data->sp);
+
+  if (prev != runqueue) {
+    prev->data->sp = prev_sp;
+  }
 }
 
 int spawn_thread(unsigned int parent_sp) {
@@ -156,7 +174,6 @@ int spawn_thread(unsigned int parent_sp) {
   struct tcb *child = &tcbs[i];
 
   int child_stack_bottom = THREADS_STACK_BOTTOM - (child->id*STACK_SIZE);
-
   int parent_stack_bottom;
 
   // Check if parent_sp is in the memory allocated for our threads.
@@ -186,16 +203,6 @@ int spawn_thread(unsigned int parent_sp) {
 void exit_thread(void) {
   struct list_elem *self = runqueue;
   self->data->state = INACTIVE;
-
-  if (self->next == self) {
-    // Enqueue idle thread since this was the only thread remaining. 
-    enqueue_single_thread(&tcbs[0].element);
-  } else {
-    // Remove self from runqueue.
-    runqueue = self->next;
-    runqueue->prev = self->prev;
-    runqueue->prev->next = runqueue;
-  }
   switch_thread();
 }
 
