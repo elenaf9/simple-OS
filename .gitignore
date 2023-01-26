@@ -3,3 +3,6 @@
 *kernel 
 *kernel.bin 
 *kernel.img
+
+// editor stuff
+.vscode/*

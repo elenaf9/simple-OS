@@ -20,15 +20,13 @@
 #define ST_RTAR 0x20 // Real-time Alarm Register
 #define ST_CRTR 0x24 // Current Real-time Register
 
-#define ST_INTERVAL 0x8000/2 // = 32768:2; This corresponds to 0.5s
+#define ST_INTERVAL 0x8000/1000 // = 32768:1000; This corresponds to 1ms
 
 enum st_interrupt {
   PERIOD_TIMER,
   ALARM,
   NONE
 };
-
-void set_periodic_timer(uint16_t timer) { mem_write_u32(ST_ADDR + ST_PIMR, timer); }
 
 enum st_interrupt is_st_interrupt(void) {
   int status = mem_read_u32(ST_ADDR + ST_SR);
@@ -53,8 +51,8 @@ void set_alms(unsigned int time) {
   return mem_write_u32(ST_ADDR + ST_RTAR, time);
 }
 
-void busy_wait(int ms) {
-  int i = 0;
+void busy_wait(unsigned int ms) {
+  unsigned int i = 0;
   while (i < ms) {
     while (!mem_is_set(ST_ADDR + ST_SR, RTTIN)) {
     };
@@ -64,11 +62,12 @@ void busy_wait(int ms) {
 
 
 void init_st(void) {
-  set_periodic_timer(ST_INTERVAL);
+  // Init periodic timer to trigger every ~10ms.
+  mem_write_u32(ST_ADDR + ST_PIMR, ST_INTERVAL*10);
+
+  // Init rt timer to increment its counter every ~1ms.
+  mem_write_u32(ST_ADDR + ST_RTMR, ST_INTERVAL);
 
   // Enable timer interrupt
   mem_write_u32(ST_ADDR + ST_IER, (PITS|ALMS));
-
-  // init rt timer to increment its counter every ~1ms
-  mem_write_u32(ST_ADDR + ST_RTMR, (ST_INTERVAL / 500));
 }
