@@ -23,9 +23,14 @@ void handle_irq(void) {
   }
 }
 
-void handle_data_abort(void) { printf("Data abort!\n"); }
+void handle_data_abort(int addr) {
+  printf("Data abort triggered at %x!\n", addr);
+}
 
-void handle_prefetched_abort(void) { printf("Prefetched abort!\n"); }
+void handle_prefetched_abort(int addr)  {
+  printf("Prefetched abort triggered at %x!\n", addr);
+}
+
 
 void handle_software_interrupt(void) { printf("Software interrupt!\n"); }
 

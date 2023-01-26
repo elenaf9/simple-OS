@@ -111,18 +111,20 @@ _undefined_instruction:
     mov r0, r4
     bl handle_undefined_instruction
     ldmfd sp!, {r0-r4, r12, pc}^
-    b _Lend
 
 _data_abort:
-    stmfd sp!, {r0-r3, r12, lr}
+    mov r4, lr
+    sub r4, #8 // Instruction that triggered the exception.
+    mov r0, r4
     bl handle_data_abort
     // ldmfd sp!, {r0-r3, r12, pc}^
     b _Lend
 
 _prefetched_abort:
-    stmfd sp!, {r0-r3, r12, lr}
-    bl handle_data_abort
-    // ldmfd sp!, {r0-r3, r12, pc}^
+    mov r4, lr
+    sub r4, #4 // Instruction that triggered the exception.
+    mov r0, r4
+    bl handle_prefetched_abort
     b _Lend
     
 _fiq:
