@@ -1,4 +1,5 @@
-#include "system_timer.h"
+#include <stddef.h>
+#include <system_timer.h>
 #include <mem.h>
 #include <print.h>
 #include <processor.h>
@@ -25,8 +26,8 @@ struct resources {
   // > 0 if the thread is waiting for a system timer time
   // 0 if not blocked on system timer
   unsigned int st_time;
-  // 1 if waiting for a char from dbgu, 0 else.
-  int is_waiting_char;
+  // Whether the thread is waiting for a char from dbgu.
+  _Bool is_waiting_char;
 };
 
 struct tcb {
@@ -38,26 +39,23 @@ struct tcb {
 };
 
 static struct tcb *const tcbs = (struct tcb *)TCBS_BASE;
-struct list_elem *runqueue;
+// Queue of active threads. The idle thread is never enqueued!
+// NULL in case no thread is active, i.e. idle thread is running.
+struct list_elem *runqueue = NULL;
 
-static void enqueue_single_thread(struct list_elem* elem) {
-  elem->data->state = READY;
-  elem->next = elem;
-  elem->prev = elem;
-  runqueue = elem;
-}
 
-static void enqueue_next_thread(struct list_elem* elem) {
-  elem->data->state = READY;
-  elem->prev = runqueue;
-  elem->next = runqueue->next;
-  runqueue->next->prev = elem;
-  runqueue->next = elem;
-}
 
 // Idle thread that runs if no other thread is active.
 static void idle_thread() {
   while (1) {}
+}
+
+static void run_idle_thread(struct tcb *prev) {
+  struct tcb *idle_thread = &tcbs[0];
+  unsigned int prev_sp = _switch_usr_stack(idle_thread->sp);
+  if (prev) {
+    prev->sp = prev_sp;
+  }
 }
 
 // Initiate threading and insert an idle thread that
@@ -77,7 +75,6 @@ void init_threading(void) {
   // Initialized a stack for this thread so that the correct context is loaded on 
   // thread switch.
   idle_tcb->sp = _init_idle_thread_stack(THREADS_STACK_BOTTOM, (unsigned int)&idle_thread);
-  enqueue_single_thread(&idle_tcb->element);
 }
 
 // Copy the stack of the parent thread to the child.
@@ -96,63 +93,70 @@ static unsigned int copy_thread_stack(unsigned int child_stack_bottom, unsigned 
   return child_sp;
 }
 
-
-
 // Switch to the next thread in the runqueue if there are more than one threads
 // active.
 void switch_thread(void) {
 
   struct list_elem *prev = runqueue;
 
-  // Remove exited thread.
-  if (prev->data->state == INACTIVE) {
+  // Remove waiting or exited thread from runqueue.
+  if (prev && (prev->data->state == INACTIVE || prev->data->state == WAITING)) {
     if (prev->next == prev) {
-      // Enqueue idle thread since this was the only thread remaining. 
-      enqueue_single_thread(&tcbs[0].element);
+      runqueue = NULL;
     } else {
-      // Remove self from runqueue.
+      // Remove finished thread from runqueue.
       runqueue = prev->prev;
       runqueue->next = prev->next;
       runqueue->next->prev = runqueue;
     }
   }
 
-  struct list_elem *next = runqueue->next;
-
-  // Iterate through runqueue to find next non-waiting thread.
-  while (next->data->state == WAITING && next != runqueue) {
-    next = next->next;
+  if (!runqueue) {
+    struct tcb *prev_data = NULL;
+    if (prev) {
+      prev_data = prev->data;
+    }
+    run_idle_thread(prev_data);
+    return;
   }
 
-  if (next->data->state == RUNNING) {
+  runqueue = runqueue->next;
+  if (runqueue->data->state == RUNNING) {
     // Only single thread active -  no thread switch needed.
     return;
   }
 
-  runqueue = next;
-
-  if (runqueue->data->state == WAITING) {
-    // All threads are waiting, so run idle thread.
-    enqueue_next_thread(&tcbs[0].element);
-    runqueue = runqueue->next;
-  }
-
-  if (prev->data->state != WAITING) {
+  if (prev->data->state == RUNNING) {
     prev->data->state = READY;
   }
 
   runqueue->data->state = RUNNING;
 
   unsigned int prev_sp = _switch_usr_stack(runqueue->data->sp);
-
   if (prev != runqueue) {
     prev->data->sp = prev_sp;
   }
 }
 
+static void enqueue_thread(struct list_elem* elem) {
+  elem->data->state = READY;
+  if (!runqueue) {
+    // Insert as only element in runqueue.
+    elem->next = elem;
+    elem->prev = elem;
+    runqueue = elem;
+  } else {
+    // Enqueue as next thread.
+    elem->prev = runqueue;
+    elem->next = runqueue->next;
+    runqueue->next->prev = elem;
+    runqueue->next = elem;
+  }
+}
+
 int spawn_thread(unsigned int parent_sp) {
   // Insert at a free slot in the TCBs array.
-  int is_space = 0;
+  _Bool is_space = 0;
   int i;
   for (i = 1; i < NUM_THREADS + 1; i++) {
     if (tcbs[i].state == INACTIVE) {
@@ -173,6 +177,7 @@ int spawn_thread(unsigned int parent_sp) {
   // If it's not it means that our parent is not a thread, but instead the main
   // function, in which case the processor system mode stack needs to be cloned.
   if (
+    runqueue &&
     parent_sp <= THREADS_STACK_BOTTOM && 
     parent_sp >= THREADS_STACK_BOTTOM - (NUM_THREADS+1)*STACK_SIZE) 
   {
@@ -183,27 +188,32 @@ int spawn_thread(unsigned int parent_sp) {
   }
 
   child->sp = copy_thread_stack(child_stack_bottom, parent_stack_bottom, parent_sp);
+  
+  enqueue_thread(&child->element);
 
-  if (runqueue->data->id == 0) {
-    // Only idle thread was running - replace in runqueue.
-    enqueue_single_thread(&child->element);
-  } else {
-    enqueue_next_thread(&child->element);
-  }
   return i;
 }
 
 void exit_thread(void) {
+  if (!runqueue) {
+    printf("Error: `exit` may only be called within a thread context!\n");
+    return;
+  }
   struct list_elem *self = runqueue;
   self->data->state = INACTIVE;
   switch_thread();
 }
 
 void thread_sleep(unsigned int ms) {
+  if (!runqueue) {
+    printf("Error: `sleep` may only be called within a thread context!\n");
+    return;
+  }
   unsigned int time = get_crtr();
   unsigned int until = time + ms;
-  runqueue->data->waiting_for.st_time = until;
-  runqueue->data->state = WAITING;
+  struct list_elem *thread = runqueue;
+  thread->data->waiting_for.st_time = until;
+  thread->data->state = WAITING;
   unsigned int alms = get_alms();
   if (!alms || alms > until || alms < time) {
     set_alms(until);
@@ -212,35 +222,51 @@ void thread_sleep(unsigned int ms) {
 }
 
 void thread_wait_char(void) {
+  if (!runqueue) {
+    printf("Error: `read` may only be called within a thread context!\n");
+    return;
+  }
   runqueue->data->waiting_for.is_waiting_char = 1;
   runqueue->data->state = WAITING;
   switch_thread();
 }
 
 void on_dbgu_rx(char c) {
-  // Unblock first thread in runqueue that is waiting for a char.
-  struct list_elem *iter = runqueue->next;
-  while(iter != runqueue && (iter->data->state != WAITING || !iter->data->waiting_for.is_waiting_char)) {
-    iter = iter->next;
-  }
-  if (iter->data->state == WAITING && iter->data->waiting_for.is_waiting_char) {
-    iter->data->state = READY;
-    // The newest item pushed to the thread's stack was r0.
-    // Overwrite it with the received char so it is returned from the
-    // `read` sys call.
-    *(unsigned char *)iter->data->sp = c;
+  // Unblock first thread that is waiting for a char.
+  // Note: this is unfair since we are always search the tcb array starting from the front, i.e.
+  // if multiple threads are waiting for a char the one with the lowest index wins.
+  int i;
+  for(i = 1; i < (NUM_THREADS + 1); i++) {
+    struct tcb *curr = &tcbs[i];
+    if (curr->state == WAITING && curr->waiting_for.is_waiting_char) {
+
+      // The newest item pushed to the thread's stack was r0.
+      // Overwrite it with the received char so it is returned from the
+      // `read` sys call.
+      *(unsigned char *)curr->sp = c;
+      curr->waiting_for.is_waiting_char = 0;
+
+      _Bool was_queue_empty = runqueue == 0;
+      enqueue_thread(&curr->element);
+      if (was_queue_empty) {
+        switch_thread();
+      }
+      break;
+    }
   }
 }
 
 void on_st_alarm(void) {
   unsigned int time = get_crtr();
 
-  struct list_elem *iter;
   unsigned int soonest = 0;
+  unsigned int unblocked = 0;
+  _Bool was_queue_empty = runqueue == 0;
 
-  for(iter = runqueue->next; iter != runqueue; iter = iter->next) {
+  int i;
+  for(i=1; i<NUM_THREADS+1; i++) {
 
-    struct tcb *curr = iter->data;
+    struct tcb *curr = &tcbs[i];
     unsigned int waiting_st = curr->waiting_for.st_time;
 
     if (curr->state != WAITING || !waiting_st) {
@@ -257,13 +283,15 @@ void on_st_alarm(void) {
     }
 
     curr->waiting_for.st_time = 0;
-    if (!curr->waiting_for.is_waiting_char) {
-      curr->state = READY;
-    }
-
+    enqueue_thread(&curr->element);
+    unblocked++;
   }
 
   if (soonest) {
     set_alms(soonest);
+  }
+  
+  if (was_queue_empty && unblocked) {
+    switch_thread();
   }
 }
