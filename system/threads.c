@@ -211,11 +211,13 @@ void thread_sleep(unsigned int ms) {
   }
   unsigned int time = get_crtr();
   unsigned int until = time + ms;
+
   struct list_elem *thread = runqueue;
   thread->data->waiting_for.st_time = until;
   thread->data->state = WAITING;
+
   unsigned int alms = get_alms();
-  if (!alms || alms > until || alms < time) {
+  if (!alms || alms > until || alms <= time) {
     set_alms(until);
   }
   switch_thread();

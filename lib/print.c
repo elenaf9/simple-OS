@@ -97,9 +97,9 @@ void periodically_print_char(char c) {
   for (i = 0; i < (int) c; i++) {
     printf("%c", c);
     if (c >= 'a') {
-      sleep(100); // wait 0.5s
+      sleep(100); // sleep 100ms
     } else {
-      busy_wait(100);
+      busy_wait(100); // block 100ms
     }
   }
 }
