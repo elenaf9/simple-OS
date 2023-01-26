@@ -53,7 +53,6 @@ _cpu_enable_interrupt:
 // 
 // @r0: stack bottom for this thread
 // @r1: pointer to the idle thread's function
-// @r2: sanity check parameter for idle thread function.
 // returns stack pointer
 _init_idle_thread_stack:
 
@@ -70,9 +69,6 @@ _init_idle_thread_stack:
     mov r14, r1
     stmfd sp!, {r14} 
     
-    // Parameter for idle thread. 
-    mov r0, r2
-
     stmfd sp!, {r1-r12, r14} 
     // Initial processor status register
     mov r1, #0b10000
