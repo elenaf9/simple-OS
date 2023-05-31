@@ -1,20 +1,3 @@
-#
-# Kurzanleitung
-# =============
-#
-# make		-- Baut den Kernel.
-# make all
-#
-# make install	-- Baut den Kernel und transferiert ihn auf den Server.
-# 		   Das Board holt sich diesen Kernel beim nächsten Reset.
-#
-# make clean	-- Löscht alle erzeugten Dateien.
-#
-
-
-#
-# Quellen
-#
 LSCRIPT = kernel.lds
 OBJ = system/ivt.o system/start.o system/entry.o system/processor.o system/irq.o
 OBJ += lib/print.o
@@ -28,7 +11,7 @@ OBJ += system/threads.o
 OBJ += lib/syscalls.o
 
 #
-# Konfiguration
+# Config
 #
 CC = arm-none-eabi-gcc
 LD = arm-none-eabi-ld
@@ -38,7 +21,7 @@ OBJCOPY = arm-none-eabi-objcopy
 CFLAGS = -Wall -Wextra -ffreestanding -mcpu=arm920t -O2
 CPPFLAGS = -Iinclude
 
-#Flags zum Debuggen
+# Debug Flags
 CFLAGS += -g -Og
 
 #LIBGCC := $(shell $(CC) -print-libgcc-file-name)
@@ -46,7 +29,7 @@ CFLAGS += -g -Og
 DEP = $(OBJ:.o=.d)
 
 #
-# Regeln
+# Rules
 #
 .PHONY: all 
 all: kernel
